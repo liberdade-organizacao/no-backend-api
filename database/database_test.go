@@ -12,7 +12,7 @@ func TestDatabasePing(t *testing.T) {
     password := "password"
     dbname := "baas"
     connection := NewDatabase(host, port, user, password, dbname)
-    err := CheckDatabase(connection)
+    err := connection.CheckDatabase()
     if err != nil {
         t.Errorf("Database connection is not working: %#v\n", err)
     }

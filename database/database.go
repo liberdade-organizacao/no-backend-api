@@ -33,7 +33,13 @@ func NewDatabase(host string,
 }
 
 // Verifies if the database connection is working properly
-func CheckDatabase(connection Conn) error {
+func (connection *Conn) CheckDatabase() error {
     return connection.Database.Ping()
+}
+
+// Execute a SQL query
+func (connection *Conn) Query(query string) (sql.Result, error) {
+    result, err := connection.Database.Exec(query)
+    return result, err
 }
 
