@@ -2,8 +2,11 @@ package main
 
 import (
     "fmt"
+    "liberdade.bsb.br/baas/api/services"
 )
 
 func main() {
-    fmt.Println("I don't do much yet")
+    port := ":8080"
+    fmt.Printf("Starting server at %s\n", port)
+    services.StartServer(port)
 }
