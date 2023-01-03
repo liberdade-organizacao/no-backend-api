@@ -8,6 +8,7 @@ psql:
 .PHONY: test
 test:
 	go test ./database
+	go test ./services/*.go
 
 .PHONY: build
 build: test
