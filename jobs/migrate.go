@@ -33,14 +33,14 @@ func SetupDatabase(config map[string]string) {
     }
 }
 
-// Reads a migration from memory and executes it
+// Read a migration from memory and executes it
 func runMigration(filename string, connection *database.Conn) error {
     migration := common.ReadFile(filename)
     _, err := connection.Query(migration)
     return err
 }
 
-// Adds migration to migrations table
+// Add migration to migrations table
 func addMigration(filename string, connection *database.Conn) error {
     addMigrationSql := common.ReadFile("./resources/sql/tasks/add_migration.sql")
     migrationName := strings.ReplaceAll(filename, ".up.sql", "")
@@ -89,7 +89,43 @@ func MigrateUp(config map[string]string) {
     }
 }
 
-// TODO undo last migration
+// Undo last migration
 func MigrateDown(config map[string]string) {
-    fmt.Println("Not implemented yet!")
+    connection := newConnection(config)
+
+    // getting last migration
+    getLastMigrationSql := common.ReadFile("./resources/sql/tasks/get_last_migration.sql")
+    rows, err := connection.Query(getLastMigrationSql)
+    if err != nil {
+        panic(err)
+    }
+    defer rows.Close()
+
+    var migrationId int
+    var migrationName string
+    var migrationDate string
+    for rows.Next() {
+        err := rows.Scan(&migrationId, &migrationName, &migrationDate)
+        if err != nil {
+            panic(err)
+        }
+    }
+
+    // running last migration
+    migrationFileName := fmt.Sprintf(
+        "%s%s.down.sql", 
+        MIGRATIONS_FOLDER,
+        migrationName,
+    )
+    err = runMigration(migrationFileName, connection)
+    if err != nil {
+        panic(err)
+    }
+
+    // removing last migration from database
+    removeLastMigrationSql := common.ReadFile("./resources/sql/tasks/remove_last_migration.sql")
+    _, err = connection.Query(removeLastMigrationSql)
+    if err != nil {
+        panic(err)
+    }
 }
