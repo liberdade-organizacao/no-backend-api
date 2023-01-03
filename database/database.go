@@ -13,12 +13,8 @@ type Conn struct {
 }
 
 // Creates a new database connection
-func NewDatabase(host string,
-                 port int,
-                 user string,
-                 password string,
-                 dbname string) Conn {
-    connString := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable", host, port, user, password, dbname)
+func NewDatabase(host, port, user, password, dbname string) Conn {
+    connString := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable", host, port, user, password, dbname)
     db, err := sql.Open("postgres", connString)
     if err != nil {
         panic(err)

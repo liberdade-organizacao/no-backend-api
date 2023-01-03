@@ -1,28 +1,22 @@
 package jobs
 
 import (
-    "io/ioutil"
+    "liberdade.bsb.br/baas/api/common"
     "liberdade.bsb.br/baas/api/database"
 )
 
 // Setup migrations table
-func SetupDatabase() {
-    // TODO load database values from a config file
-    host := "localhost"
-    port := 5434
-    user := "liberdade"
-    password := "password"
-    dbname := "baas"
+func SetupDatabase(config map[string]string) {
+    host := config["host"]
+    port := config["port"]
+    user := config["user"]
+    password := config["password"]
+    dbname := config["dbname"]
     connection := database.NewDatabase(host, port, user, password, dbname)
 
-    setupDatabaseSqlFileName := "./resources/sql/setup_database.sql"
-    setupDatabaseSqlBytes, err := ioutil.ReadFile(setupDatabaseSqlFileName)
-    if err != nil {
-        panic(err)
-    }
-    setupDatabaseSql := string(setupDatabaseSqlBytes)
+    setupDatabaseSql := common.ReadFile("./resources/sql/setup_database.sql")
 
-    _, err = connection.Query(setupDatabaseSql)
+    _, err := connection.Query(setupDatabaseSql)
     if err != nil {
         panic(err)
     }

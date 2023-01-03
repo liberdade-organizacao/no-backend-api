@@ -7,7 +7,7 @@ import (
 func TestDatabasePing(t *testing.T) {
     // using the defaults from docker compose
     host := "localhost"
-    port := 5434
+    port := "5434"
     user := "liberdade"
     password := "password"
     dbname := "baas"
