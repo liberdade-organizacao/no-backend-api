@@ -34,8 +34,8 @@ func (connection *Conn) CheckDatabase() error {
 }
 
 // Execute a SQL query
-func (connection *Conn) Query(query string) (sql.Result, error) {
-    result, err := connection.Database.Exec(query)
+func (connection *Conn) Query(query string) (*sql.Rows, error) {
+    result, err := connection.Database.Query(query)
     return result, err
 }
 
