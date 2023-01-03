@@ -19,9 +19,11 @@ func sayHello(w http.ResponseWriter, r *http.Request) {
  ***************/
 
 // Registers HTTP handles and starts server
-func StartServer(port string) {
+func StartServer(config map[string]string) {
+    port := config["server_port"]
+
     http.HandleFunc("/", sayHello)
-    
+
     http.ListenAndServe(port, nil)
 }
 
