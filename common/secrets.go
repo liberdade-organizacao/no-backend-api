@@ -4,3 +4,5 @@ package common
 
 // TODO decode strings based on a salt
 
+// TODO hide strings
+

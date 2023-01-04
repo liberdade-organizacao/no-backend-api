@@ -9,7 +9,7 @@ func TestDatabasePing(t *testing.T) {
     host := "localhost"
     port := "5434"
     user := "liberdade"
-    password := "password"
+    password := "db_password"
     dbname := "baas"
     connection := NewDatabase(host, port, user, password, dbname)
     err := connection.CheckDatabase()

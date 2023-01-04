@@ -10,11 +10,11 @@ type Context struct {
 }
 
 func NewContext(config map[string]string) *Context {
-    host := config["host"]
-    port := config["port"]
-    user := config["user"]
-    password := config["password"]
-    dbname := config["dbname"]
+    host := config["db_host"]
+    port := config["db_port"]
+    user := config["db_user"]
+    password := config["db_password"]
+    dbname := config["db_name"]
     connection := database.NewDatabase(host, port, user, password, dbname)
     return &Context {
         Config: config,

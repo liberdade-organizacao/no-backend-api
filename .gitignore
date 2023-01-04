@@ -1,7 +1,7 @@
 ##############
 # NO-BACKEND #
 ##############
-./resources/config.json
+resources/config.json
 
 ##########
 # GOLANG #
@@ -28,4 +28,3 @@ vendor/
 
 # Go workspace file
 go.work
-

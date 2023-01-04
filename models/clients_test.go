@@ -8,11 +8,11 @@ func TestClientAccountCreation_HappyCase(t *testing.T) {
     // TODO setup database for this test only
     // TODO destroy database after test is executed
     config := map[string]string {
-        "host": "localhost",
-        "port": "5434",
-        "user": "liberdade",
-        "password": "password",
-        "dbname": "baas",
+        "db_host": "localhost",
+        "db_port": "5434",
+        "db_user": "liberdade",
+        "db_password": "db_password",
+        "db_name": "baas",
     }
     context := NewContext(config)
     defer context.Close()
@@ -39,11 +39,11 @@ func TestClientAccountCreation_BadCases(t *testing.T) {
     // TODO setup database for this test only
     // TODO destroy database after test is executed
     config := map[string]string {
-        "host": "localhost",
-        "port": "5434",
-        "user": "liberdade",
-        "password": "password",
-        "dbname": "baas",
+        "db_host": "localhost",
+        "db_port": "5434",
+        "db_user": "liberdade",
+        "db_password": "db_password",
+        "db_name": "baas",
     }
     context := NewContext(config)
     defer context.Close()
