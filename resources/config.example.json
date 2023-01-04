@@ -1,9 +1,11 @@
 {
   "server_port": ":8080",
+  "server_salt": "01324567890123456789012345678901",
+  "db_sql_folder": "./resources/sql",
   "db_host": "localhost",
   "db_port": "5434",
   "db_user": "liberdade",
-  "db_password": "db_password",
+  "db_password": "password",
   "db_name": "baas"
 }
 

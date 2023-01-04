@@ -4,17 +4,20 @@ import (
     "testing"
 )
 
+var CONFIG = map[string]string {
+    "db_host": "localhost",
+    "db_port": "5434",
+    "db_user": "liberdade",
+    "db_password": "password",
+    "db_name": "baas",
+    "db_sql_folder": "../resources/sql",
+    "server_salt": "01234567890123456789012345678901",
+}
+
 func TestClientAccountCreation_HappyCase(t *testing.T) {
     // TODO setup database for this test only
     // TODO destroy database after test is executed
-    config := map[string]string {
-        "db_host": "localhost",
-        "db_port": "5434",
-        "db_user": "liberdade",
-        "db_password": "db_password",
-        "db_name": "baas",
-    }
-    context := NewContext(config)
+    context := NewContext(CONFIG)
     defer context.Close()
 
     email := "test@example.net"
@@ -27,7 +30,6 @@ func TestClientAccountCreation_HappyCase(t *testing.T) {
         return
     }
 
-    // TODO verify if auth key is correct
     authKey, err := context.LoginClient(email, password)
     if err != nil || authKey == "" {
         t.Errorf("Could not login client: %#v\n", err)
@@ -38,14 +40,7 @@ func TestClientAccountCreation_HappyCase(t *testing.T) {
 func TestClientAccountCreation_BadCases(t *testing.T) {
     // TODO setup database for this test only
     // TODO destroy database after test is executed
-    config := map[string]string {
-        "db_host": "localhost",
-        "db_port": "5434",
-        "db_user": "liberdade",
-        "db_password": "db_password",
-        "db_name": "baas",
-    }
-    context := NewContext(config)
+    context := NewContext(CONFIG)
     defer context.Close()
 
     email := "test@example.net"
@@ -62,6 +57,12 @@ func TestClientAccountCreation_BadCases(t *testing.T) {
     authKey, err := context.LoginClient(email, wrongPassword)
     if err == nil || authKey != "" {
         t.Errorf("Client could login with wrong password: %#v\n", err)
+        return
+    }
+
+    _, err = context.CreateClientAccount(email, wrongPassword, isAdmin)
+    if err == nil {
+        t.Errorf("Client should not have been created")
         return
     }
 }

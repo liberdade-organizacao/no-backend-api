@@ -15,7 +15,8 @@ func NewContext(config map[string]string) *Context {
     user := config["db_user"]
     password := config["db_password"]
     dbname := config["db_name"]
-    connection := database.NewDatabase(host, port, user, password, dbname)
+    sqlFolder := config["db_sql_folder"]
+    connection := database.NewDatabase(host, port, user, password, dbname, sqlFolder)
     return &Context {
         Config: config,
         Connection: &connection,

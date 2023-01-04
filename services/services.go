@@ -16,14 +16,14 @@ func sayHello(w http.ResponseWriter, r *http.Request) {
 }
 
 // Creates a new account
-func generateHandleSignup(context *models.Context) {
+func generateHandleSignup(context *models.Context) func(http.ResponseWriter, *http.Request) {
     return func(w http.ResponseWriter, r *http.Request) {
         io.WriteString(w, "TODO implement me!")
     }
 }
 
 // Logins with that account
-func generateHandleLogin(context *models.Context) {
+func generateHandleLogin(context *models.Context) func(http.ResponseWriter, *http.Request) {
     return func(w http.ResponseWriter, r *http.Request) {
         io.WriteString(w, "TODO implement me!")
     }
@@ -36,7 +36,7 @@ func generateHandleLogin(context *models.Context) {
 // Registers HTTP handles and starts server
 func StartServer(config map[string]string) {
     port := config["server_port"]
-    context := model.NewContext(config)
+    context := models.NewContext(config)
     defer context.Close()
 
     http.HandleFunc("/", sayHello)

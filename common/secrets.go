@@ -30,5 +30,3 @@ func Decode(token, salt string) (string, error) {
     return string(payloadBytes), nil    
 }
 
-// TODO hide strings
-
