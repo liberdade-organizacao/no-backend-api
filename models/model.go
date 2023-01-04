@@ -1,28 +1,28 @@
-package model
+package models
 
 import (
     "liberdade.bsb.br/baas/api/database"
 )
 
-type Model struct {
+type Context struct {
     Config map[string]string
     Connection *database.Conn
 }
 
-func NewModel(config map[string]string) *Model {
+func NewContext(config map[string]string) *Context {
     host := config["host"]
     port := config["port"]
     user := config["user"]
     password := config["password"]
     dbname := config["dbname"]
     connection := database.NewDatabase(host, port, user, password, dbname)
-    return &Model {
+    return &Context {
         Config: config,
         Connection: &connection,
     }
 }
 
-func (m *Model) Close() {
-    m.Connection.Close()
+func (context *Context) Close() {
+    context.Connection.Close()
 }
 

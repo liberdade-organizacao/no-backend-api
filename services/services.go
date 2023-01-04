@@ -3,7 +3,7 @@ package services
 import (
     "net/http"
     "io"
-    "liberdade.bsb.br/baas/api/model"
+    "liberdade.bsb.br/baas/api/models"
 )
 
 /***************
@@ -16,14 +16,14 @@ func sayHello(w http.ResponseWriter, r *http.Request) {
 }
 
 // Creates a new account
-func generateHandleSignup(m *model.Model) {
+func generateHandleSignup(context *models.Context) {
     return func(w http.ResponseWriter, r *http.Request) {
         io.WriteString(w, "TODO implement me!")
     }
 }
 
 // Logins with that account
-func generateHandleLogin(m *model.Model) {
+func generateHandleLogin(context *models.Context) {
     return func(w http.ResponseWriter, r *http.Request) {
         io.WriteString(w, "TODO implement me!")
     }
@@ -36,12 +36,12 @@ func generateHandleLogin(m *model.Model) {
 // Registers HTTP handles and starts server
 func StartServer(config map[string]string) {
     port := config["server_port"]
-    m := model.NewModel(config)
-    defer m.Close()
+    context := model.NewContext(config)
+    defer context.Close()
 
     http.HandleFunc("/", sayHello)
-    http.HandleFunc("/clients/signup", generateHandleSignup(m))
-    http.HandleFunc("/clients/login", generateHandleLogin(m))
+    http.HandleFunc("/clients/signup", generateHandleSignup(context))
+    http.HandleFunc("/clients/login", generateHandleLogin(context))
 
     http.ListenAndServe(port, nil)
 }
