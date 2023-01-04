@@ -17,6 +17,7 @@ var CONFIG = map[string]string {
 func TestClientAccountCreation_HappyCase(t *testing.T) {
     context := NewContext(CONFIG)
     context.Connection.SetupDatabase()
+    defer context.Close()
     defer context.Connection.DropDatabase()
 
     email := "test@example.net"
@@ -31,7 +32,7 @@ func TestClientAccountCreation_HappyCase(t *testing.T) {
 
     authKey, err := context.LoginClient(email, password)
     if err != nil || authKey == "" {
-        t.Errorf("Could not login client: %#v\n", err)
+        t.Errorf("Could not login client: %#v; auth key: %s\n", err, authKey)
         return
     }
 }
@@ -39,6 +40,7 @@ func TestClientAccountCreation_HappyCase(t *testing.T) {
 func TestClientAccountCreation_BadCases(t *testing.T) {
     context := NewContext(CONFIG)
     context.Connection.SetupDatabase()
+    defer context.Close()
     defer context.Connection.DropDatabase()
 
     email := "another_test@example.net"

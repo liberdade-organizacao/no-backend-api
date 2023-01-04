@@ -1,17 +1,12 @@
 package models
 
 import (
-    "errors"
     "liberdade.bsb.br/baas/api/common"
 )
 
 // Creates a new client account
 func (context *Context) CreateClientAccount(email string, password string, isAdmin bool) (string, error) {
     salt := context.Config["server_salt"]     
-    passwordToStore, err := common.Encode(password, salt)
-    if err != nil {
-        return "", err
-    }
     isAdminToStore := "off"
     if isAdmin {
         isAdminToStore = "on"
@@ -24,7 +19,8 @@ func (context *Context) CreateClientAccount(email string, password string, isAdm
     _, err = context.Connection.RunSqlOperation(
         "create_client_account", 
         email,
-        passwordToStore,
+        password,
+        salt,
         isAdminToStore,
         authKey,
     )
@@ -35,10 +31,24 @@ func (context *Context) CreateClientAccount(email string, password string, isAdm
     return authKey, nil
 }
 
-// TODO complete me!
 // Allows clients to login by trading their email and password (if correct)
 // with an auth key
 func (context *Context) LoginClient(email string, password string) (string, error) {
-    return "", errors.New("Not implemented yet!")
+    salt := context.Config["server_salt"]     
+    rows, err := context.Connection.RunSqlOperation(
+        "login_client", 
+        email,
+        password,
+        salt,
+    )
+    if err != nil {
+        return "", err
+    }
+
+    var queriedEmail string
+    var isAdmin bool
+    var authKey string
+    rows.Scan(&queriedEmail, &isAdmin, &authKey)
+    return authKey, nil
 }
 

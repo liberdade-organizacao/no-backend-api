@@ -34,6 +34,3 @@ func TestInvalidEncodings(t *testing.T) {
     }
 }
 
-func TestHideStuff(t *testing.T) {
-}
-

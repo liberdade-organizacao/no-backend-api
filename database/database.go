@@ -49,8 +49,8 @@ func (connection *Conn) Close() {
 }
 
 // Runs a SQL task
-func (connection *Conn) RunSqlOperation(taskFileName string, params ...any) (*sql.Rows, error) {
-    opFilePath := fmt.Sprintf("%s/operations/%s.sql", connection.SqlFolder, taskFileName)
+func (connection *Conn) RunSqlOperation(opFileName string, params ...any) (*sql.Rows, error) {
+    opFilePath := fmt.Sprintf("%s/operations/%s.sql", connection.SqlFolder, opFileName)
     rawSqlQuery := common.ReadFile(opFilePath)
     formattedSqlQuery := fmt.Sprintf(rawSqlQuery, params...)
     return connection.Query(formattedSqlQuery)
