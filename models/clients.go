@@ -5,7 +5,6 @@ import (
     "liberdade.bsb.br/baas/api/common"
 )
 
-// FIXME clients should have their own auth key
 // Creates a new client account
 func (context *Context) CreateClientAccount(email string, password string, isAdmin bool) (string, error) {
     salt := context.Config["server_salt"]     
@@ -17,18 +16,23 @@ func (context *Context) CreateClientAccount(email string, password string, isAdm
     if isAdmin {
         isAdminToStore = "on"
     }
+    authKey, err := common.Encode(email, salt)
+    if err != nil {
+        return "", err
+    }
     
-    _, err = context.Connection.RunSqlTask(
+    _, err = context.Connection.RunSqlOperation(
         "create_client_account", 
         email,
         passwordToStore,
         isAdminToStore,
+        authKey,
     )
     if err != nil {
         return "", err
     }
 
-    return "", nil
+    return authKey, nil
 }
 
 // TODO complete me!

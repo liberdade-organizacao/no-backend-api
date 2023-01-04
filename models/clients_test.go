@@ -15,10 +15,9 @@ var CONFIG = map[string]string {
 }
 
 func TestClientAccountCreation_HappyCase(t *testing.T) {
-    // TODO setup database for this test only
-    // TODO destroy database after test is executed
     context := NewContext(CONFIG)
-    defer context.Close()
+    context.Connection.SetupDatabase()
+    defer context.Connection.DropDatabase()
 
     email := "test@example.net"
     password := "examplePassword"
@@ -38,12 +37,11 @@ func TestClientAccountCreation_HappyCase(t *testing.T) {
 }
 
 func TestClientAccountCreation_BadCases(t *testing.T) {
-    // TODO setup database for this test only
-    // TODO destroy database after test is executed
     context := NewContext(CONFIG)
-    defer context.Close()
+    context.Connection.SetupDatabase()
+    defer context.Connection.DropDatabase()
 
-    email := "test@example.net"
+    email := "another_test@example.net"
     password := "example password"
     wrongPassword := "wrong password"
     isAdmin := false
