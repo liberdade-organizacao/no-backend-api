@@ -33,10 +33,16 @@
   (boilerplate {"status" "ok"}))
 
 (defn clients-signup [req]
-  (boilerplace (controllers/new-client "" "" false)))
+  (let [params (json/read-str (slurp (:body req)))
+        email (get params "email")
+        password (get params "password")]
+    (boilerplate (controllers/new-client email password false))))
 
 (defn clients-login [req]
-  (boilerplate (controllers/auth-client "" "")))
+  (let [params (json/read-str (slurp (:body req)))
+        email (get params "email")
+        password (get params "password")]
+    (boilerplate (controllers/auth-client email password))))
 
 (defroutes app-routes
   (POST "/clients/signup" [] clients-signup)
