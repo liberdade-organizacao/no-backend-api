@@ -16,3 +16,21 @@
 (defn hide [secret]
   (-> (hash/md5 (str secret salt))
       (codecs/bytes->hex)))
+
+(defn list-dir [dir]
+  (let [directory (clojure.java.io/file dir)
+        files (file-seq directory)]
+    (map #(.getName %) files)))
+
+(defn read-sql-dir [dir]
+  (let [all-files (list-dir dir)
+        files (->> all-files
+                   (filter #(re-find #"(.*?)\.sql$" %)))
+        outlet (reduce (fn [state file]
+                         (assoc state 
+                                file
+                                (slurp (str dir "/" file)))) 
+                       {}
+                       files)]
+    outlet))
+
