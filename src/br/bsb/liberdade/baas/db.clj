@@ -18,13 +18,6 @@
 (defn execute-query [query]
   (jdbc/execute! ds [query] {:builder-fn rs/as-unqualified-lower-maps}))
 
-; FIXME undo all migrations and clear migrations table
-(defn drop-database []
-  (jdbc/execute! ds [(get sql-operations :drop-database)]))
-
-(defn setup-database []
-  (jdbc/execute! ds [(get sql-operations "setup-database.sql")]))
-
 ; ##############
 ; # MIGRATE UP #
 ; ##############
@@ -68,6 +61,38 @@
 ; # MIGRATE DOWN #
 ; ################
 
+(defn- get-last-migration []
+  (-> sql-operations
+      (get "get-last-migration.sql")
+      execute-query
+      first
+      (get :name)))
+
 (defn undo-last-migration []
-  (println "TODO complete me!"))
+  (let [last-migration (get-last-migration)]
+    (execute-query (get sql-migrations (str last-migration ".down.sql")))
+    (execute-query (get sql-operations "remove-last-migration.sql"))))
+
+(defn undo-migrations []
+  (let [files (->> sql-migrations-folder
+                   utils/list-dir
+                   (filter #(re-find #"(.*?)\.down\.sql$" %))
+                   sort
+                   reverse)
+        limit (count files)]
+    (loop [n 0]
+      (when (< n limit)
+        (execute-query (get sql-migrations (nth files n)))
+        (execute-query (get sql-operations "remove-last-migration.sql"))
+        (recur (inc n))))))
+
+; #####################
+; # GLOBAL OPERATIONS #
+; #####################
+
+(defn drop-database []
+  (undo-migrations))
+
+(defn setup-database []
+  (jdbc/execute! ds [(get sql-operations "setup-database.sql")]))
 

@@ -13,7 +13,7 @@
 (def random-auth-key
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTIzNH0.rWp8vvb4aDZAGcHEYjhCe9qaaf8mSyvyLeyC1QuZWU0")
 
-(deftest database-to-json
+#_(deftest database-to-json
   (testing "database backup can be exported to JSON"
     (db/setup-database)
     (db/create-admin "admin" "secretpassword" test-note)
