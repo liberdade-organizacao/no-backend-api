@@ -10,16 +10,17 @@
                         "is_admin" is-admin}))
 
 (defn new-client [email password is-admin]
-  (let [params {"email" email
-                "password" (utils/hide password)
-                "is_admin" (pqbool is-admin)
-                "auth_key" (new-auth-key email is-admin)}
-        result (db/run-operation "create-client-account.sql" params)
-        auth-key (get result :auth_key nil)
-        error (when (nil? auth-key)
-                "Failed to create client")]
-    {"auth_key" auth-key
-     "error" error}))
+  (try
+    (let [params {"email" email
+                  "password" (utils/hide password)
+                  "is_admin" (pqbool is-admin)
+                  "auth_key" (new-auth-key email is-admin)}
+          result (db/run-operation "create-client-account.sql" params)]
+      {"auth_key" (get result :auth_key)
+       "error" nil})
+    (catch org.postgresql.util.PSQLException e 
+      {"auth_key" nil
+       "error" "Email already exists"})))
 
 (defn auth-client [email password]
   (let [params {"email" email
