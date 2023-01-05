@@ -31,70 +31,20 @@
 (defn check-health [req]
   (boilerplate {"status" "ok"}))
 
-(defn create-users [req]
-  (let [params (json/read-str (slurp (:body req)))
-        username (get params "username")
-        password (get params "password")
-        notes (get params "notes")]
-    (boilerplate (db/create-user username password notes))))
-
-(defn auth-users [req]
-  (let [params (json/read-str (slurp (:body req)))
-        username (get params "username")
-        password (get params "password")]
-    (boilerplate (db/auth-user username password))))
-
-(defn update-password [req]
-  (let [params (-> req :body slurp json/read-str)
-        auth-key (get params "auth_key")
-        old-password (get params "old_password")
-        new-password (get params "new_password")]
-    (boilerplate (db/update-password auth-key old-password new-password))))
-
-(defn get-notes [req]
-  (-> req
-      :query-string
-      (url-search-params)
-      (get "auth_key")
-      (db/get-notes)
-      (boilerplate)))
-
-(defn post-notes [req]
-  (let [params (json/read-str (slurp (:body req)))
-        auth-key (get params "auth_key")
-        notes (get params "notes")]
-    (boilerplate (db/update-notes auth-key notes))))
-
-(defn export-backup [req]
-  (-> req
-      :query-string
-      (url-search-params)
-      (get "auth_key")
-      (db/backup)
-      (boilerplate)))
-
-(defn import-backup [req]
-  (let [params (json/read-str (slurp (:body req)))
-        auth-key (get params "auth_key")
-        backup (get params "backup")]
-    (boilerplate (db/import-backup auth-key backup))))
-
 (defroutes app-routes
-  (GET "/health" [] check-health)
-  (POST "/users/create" [] create-users)
-  (POST "/users/auth" [] auth-users)
-  (POST "/users/password" [] update-password)
-  (GET "/notes" [] get-notes)
-  (POST "/notes" [] post-notes)
-  (GET "/backup" [] export-backup)
-  (POST "/backup" [] import-backup))
+  (GET "/health" [] check-health))
 
 ; ################
 ; # Entry points #
 ; ################
-(defn- migrate []
+(defn- migrate-up []
   (do
-    (db/setup-database)))
+    (db/setup-database)
+    (db/run-migrations)))
+
+(defn- migrate-down []
+  (do
+    (db/undo-last-migration)))
 
 (defn- run []
   (let [port (Integer/parseInt (or (System/getenv "PORT") "3000"))]
@@ -103,8 +53,10 @@
 
 
 (defn -main [& args]
-  (do 
-    (when (some #(= "m" %) args)
-      (migrate))
-    (when (nil? args)
+ (let []
+    (when (some #(= "migrate-up" %) args)
+      (migrate-up))
+    (when (some #(= "migrate-down" %) args)
+      (migrate-down))
+    (when (some #(= "up" %) args)
       (run))))
