@@ -8,7 +8,8 @@
             [ring.middleware.defaults :refer :all]
             [jumblerg.middleware.cors :refer [wrap-cors]]
             [selmer.parser :refer :all]
-            [br.bsb.liberdade.baas.db :as db]))
+            [br.bsb.liberdade.baas.db :as db]
+            [br.bsb.liberdade.baas.controllers :as controllers]))
 
 ; #############
 ; # UTILITIES #
@@ -31,7 +32,15 @@
 (defn check-health [req]
   (boilerplate {"status" "ok"}))
 
+(defn clients-signup [req]
+  (boilerplace (controllers/new-client "" "" false)))
+
+(defn clients-login [req]
+  (boilerplate (controllers/auth-client "" "")))
+
 (defroutes app-routes
+  (POST "/clients/signup" [] clients-signup)
+  (POST "/clients/login" [] clients-login)
   (GET "/health" [] check-health))
 
 ; ################
@@ -60,3 +69,4 @@
       (migrate-down))
     (when (some #(= "up" %) args)
       (run))))
+
