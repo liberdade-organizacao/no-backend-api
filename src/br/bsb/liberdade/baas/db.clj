@@ -96,3 +96,9 @@
 (defn setup-database []
   (jdbc/execute! ds [(get sql-operations "setup-database.sql")]))
 
+(defn run-operation [operation params]
+  (let [raw-sql (get sql-operations operation)
+        query (strint/strint raw-sql params)
+        result (execute-query query)]
+    (first result)))
+
