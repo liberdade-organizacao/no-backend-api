@@ -1,5 +1,5 @@
 .PHONY: default
-default: run
+default: build
 
 .PHONY: psql
 psql:
@@ -7,23 +7,24 @@ psql:
 
 .PHONY: test
 test:
-	go test ./database
-	go test ./services/*.go
+	lein test
 
 .PHONY: build
 build: test
-	go build -o main.exe main/main.go
+	lein uberjar
+
+.PHONY: install
+install: build
+	echo "Complete me! Run the jarfile"
 
 .PHONY: run
-run: build
-	./main.exe
+run:
+	lein run up
 
 .PHONY: migrate_up
-migrate_up: build
-	./main.exe migrate_up
+migrate_up:
+	lein run migrate-up
 
 .PHONY: migrate_down
-migrate_down: build
-	./main.exe migrate_down
-
-
+migrate_down:
+	lein run migrate-down

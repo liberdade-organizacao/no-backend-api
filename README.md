@@ -7,7 +7,6 @@ Run your own no-backend service!
 ## Setup
 
 Requirements:
-- Go
+- Leiningen
 - PostgreSQL
-- Docker (for development)
-
+- Docker (optional for development)
