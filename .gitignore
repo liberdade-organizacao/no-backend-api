@@ -1,7 +1,7 @@
 #################
 # PROJECT FILES #
 #################
-resources/config.json
+resources/.env
 
 ###########
 # CLOJURE #

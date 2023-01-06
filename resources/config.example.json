@@ -1,9 +1,0 @@
-{
-  "server_port": "8080",
-  "server_secret_key": "SECRET KEY",
-  "db_host": "localhost",
-  "db_port": "5434",
-  "db_user": "liberdade",
-  "db_password": "password",
-  "db_`name": "baas"
-}
