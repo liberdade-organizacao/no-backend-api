@@ -44,6 +44,7 @@
                 "password" password}
         response (curl/post url {:body (json/generate-string params)})
         body (json/parse-string (:body response))]
+    (println "# create client")
     (println body)
     body))
 
@@ -53,6 +54,36 @@
                 "password" password}
         response (curl/post url {:body (json/generate-string params)})
         body (json/parse-string (:body response))]
+    (println "# auth client")
+    (println body)
+    body))
+
+(defn- create-app [auth-key app-name]
+  (let [url (str service-url "/apps")
+        params {"auth_key" auth-key
+                "app_name" app-name}
+        response (curl/post url {:body (json/generate-string params)})
+        body (json/parse-string (:body response))]
+    (println "# create app")
+    (println body)
+    body))
+
+(defn- list-apps [auth-key]
+  (let [url (str service-url "/apps")
+        query-params {"auth_key" auth-key}
+        response (curl/get url {:query-params query-params})
+        body (json/parse-string (get response :body))]
+    (println "# list apps")
+    (println body)
+    body))
+
+(defn- delete-app [client-auth-key app-auth-key]
+  (let [url (str service-url "/apps")
+        params {"client_auth_key" client-auth-key
+                "app_auth_key" app-auth-key}
+        response (curl/delete url {:body (json/generate-string params)})
+        body (json/parse-string (get response :body))]
+    (println "# delete app")
     (println body)
     body))
 
@@ -63,7 +94,14 @@
       (println (str "email: " email))
       (println (str "password: " password))
       (create-client-account email password)
-      (auth-client email password)
+      (let [auth-key (-> (auth-client email password) 
+                         (get "auth_key"))
+            app-auth-key (-> (create-app auth-key (random-string 10))
+                             (get "auth_key"))
+            _ (list-apps auth-key)
+            _ (delete-app auth-key app-auth-key)
+            _ (list-apps auth-key)]
+        nil)
       (println "..."))))
 
 (main)
