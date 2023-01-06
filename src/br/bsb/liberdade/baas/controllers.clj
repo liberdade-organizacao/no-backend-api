@@ -32,3 +32,47 @@
     {"auth_key" auth-key
      "error" error}))
 
+(defn- spy [it]
+  (prn it)
+  it)
+
+(defn- insert-app-xf [state params]
+  (let [error (get state "error" nil)]
+    (if (some? error)
+      [state params]
+      (let [_ (spy params)
+            client-email (:client-email params)
+            app-name (:app-name params)
+            app-auth-key (utils/encode-secret {"owner_email" client-email
+                                              "app_name" app-name})
+            ; JOE TODO figure out why this operation fails!
+            result (db/run-operation "create-app.sql"
+                                     {"owner_client_email" client-email
+                                      "app_name" app-name
+                                      "auth_key" app-auth-key})]
+        (spy result)
+        [state params]))))
+
+(defn- invite-to-app-xf [state params]
+  [(assoc state "error" "not implemented yet!")
+   params])
+
+(defn new-app [client-auth-key app-name]
+  (let [client-info (utils/decode-secret client-auth-key)
+        _ (spy client-info)
+        email (:email client-info)]
+    (->> [{"error" nil} 
+          {:client-email email
+           :app-name app-name}]
+         (apply insert-app-xf)
+         (apply invite-to-app-xf)
+         first
+         spy)))
+
+(defn get-clients-apps [client-auth-key]
+  {"apps" nil
+   "error" "not implemented yet!"})
+
+(defn delete-app [client-auth-key app-auth-key]
+  {"error" "not implemented yet!"})
+
