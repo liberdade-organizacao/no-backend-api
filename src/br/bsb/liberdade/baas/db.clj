@@ -16,6 +16,7 @@
 (Class/forName "org.postgresql.Driver")  ; required to get the driver working properly
 
 (defn execute-query [query]
+  ; (println query)
   (jdbc/execute! ds [query] {:builder-fn rs/as-unqualified-lower-maps}))
 
 ; ##############

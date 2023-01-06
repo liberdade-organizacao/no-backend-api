@@ -1,8 +1,8 @@
 INSERT INTO 
 apps(owner_id, name, auth_key) 
 VALUES(
-    SELECT id FROM clients WHERE email='%{owner_client_email}',
+    (SELECT id FROM clients WHERE email='%{owner_client_email}'),
     '%{app_name}',
-    '%{auth_key}',
+    '%{auth_key}'
 )
 RETURNING *;
