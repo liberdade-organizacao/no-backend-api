@@ -21,12 +21,14 @@
 ; ##############
 ; # MIGRATE UP #
 ; ##############
+
 (defn- check-if-migration-exists [migration]
-  (let [params {"migration" migration}
-        query (strint/strint (get sql-operations "check-if-migration-exists.sql") 
-                             params)
-        result (execute-query query)]
-    (-> result first :count pos?)))
+  (->> {"migration" migration}
+       (strint/strint (get sql-operations "check-if-migration-exists.sql"))
+       execute-query
+       first
+       :count
+       pos?))
 
 (defn- run-migration [migration-file-name]
   (->> migration-file-name
