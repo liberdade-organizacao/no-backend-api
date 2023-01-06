@@ -37,17 +37,21 @@
 (defn- insert-app-xf [state params]
   (if (some? (:error state))
     [state params]
-    (let [client-email (:client-email params)
-          app-name (:app-name params)
-          app-auth-key (utils/encode-secret {"owner_email" client-email
-                                             "app_name" app-name})
-          result (db/run-operation "create-app.sql"
-                                   {"owner_client_email" client-email
-                                    "app_name" app-name
-                                    "auth_key" app-auth-key})
-          next-state (assoc result :error nil)
-          next-params (assoc params :app-auth-key app-auth-key)]
-      [next-state next-params])))
+    (try
+      (let [client-email (:client-email params)
+            app-name (:app-name params)
+            app-auth-key (utils/encode-secret {"owner_email" client-email
+                                               "app_name" app-name})
+            result (db/run-operation "create-app.sql"
+                                     {"owner_client_email" client-email
+                                      "app_name" app-name
+                                      "auth_key" app-auth-key})
+            next-state (assoc result :error nil)
+            next-params (assoc params :app-auth-key app-auth-key)]
+        [next-state next-params])
+      (catch org.postgresql.util.PSQLException e
+        [{:error e}
+         params]))))
 
 (defn- invite-to-app-xf [state params]
   (if (some? (:error state))
@@ -110,6 +114,9 @@
                                           "app_name" app-name})]
             [state params])))
 
+(defn format-delete-app-output-xf [state params]
+  {"error" (get state :error nil)})
+
 (defn delete-app [client-auth-key app-auth-key]
   (let [client-info (utils/decode-secret client-auth-key)
         client-email (:email client-info)
@@ -122,6 +129,5 @@
            :app-name app-name}]
          (apply get-client-role-in-app-xf)
          (apply maybe-delete-app-xf)
-         ; abusing the fact state var only carries error value
-         first)))
+         (apply format-delete-app-output-xf))))
 

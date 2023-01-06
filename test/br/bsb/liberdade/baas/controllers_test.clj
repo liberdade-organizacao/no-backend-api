@@ -79,5 +79,42 @@
     (db/drop-database)))
 
 ; TODO try to delete an app from a user hasn't created the app
+(deftest handle-apps--sad-cases
+  (testing "Apps from the same owner shouldn't have the same name"
+    (db/setup-database)
+    (db/run-migrations)
+    (let [email "test@example.net"
+          password "password"
+          result (controllers/new-client email password false)
+          owner-auth-key (get result "auth_key" nil)
+          app-name "new app"
+          result (controllers/new-app owner-auth-key app-name)
+          first-error (get result "error" nil)
+          result (controllers/new-app owner-auth-key app-name)
+          second-error (get result "error" nil)
+          email "another_test@example.net"
+          result (controllers/new-client email password false)
+          owner-auth-key (get result "auth_key" nil)
+          result (controllers/new-app owner-auth-key app-name)
+          third-error (get result "error" nil)]
+      (is (nil? first-error))
+      (is (some? second-error))
+      (is (nil? third-error)))
+    (db/drop-database))
+  (testing "Wrong user should be unable to delete app"
+    (db/setup-database)
+    (db/run-migrations)
+    (let [result (controllers/new-client "owner@example.net" "pwd" false)
+          owner-auth-key (get result "auth_key" nil)
+          result (controllers/new-client "client@example.net" "pwd" false)
+          client-auth-key (get result "auth_key" nil)
+          app-name "seras victoria"
+          result (controllers/new-app owner-auth-key app-name)
+          app-auth-key (get result "auth_key" nil)
+          result (controllers/delete-app client-auth-key app-auth-key)
+          error (get result "error" nil)]
+      (is (some? error)))
+    (db/drop-database)))
+
 ; IDEA rename "controllers" "business"
 
