@@ -32,3 +32,7 @@
                          (slurp (str dir "/" file))))
                 {})))
 
+(defn spy [it]
+  (println it)
+  it)
+
