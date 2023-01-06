@@ -70,15 +70,16 @@
           result (controllers/new-app auth-key app-name)
           app-auth-key (get result "auth_key" nil)
           first-error (get result "error" nil)
+          result (controllers/get-clients-apps auth-key)
+          apps (get result "apps" nil)
           result (controllers/delete-app auth-key app-auth-key)
           second-error (get result "error" nil)]
       (is (some? app-auth-key))
       (is (nil? first-error))
-      ; TODO list apps to check if the app was there in the first place
+      (is (pos? (count apps)))
       (is (nil? second-error)))
     (db/drop-database)))
 
-; TODO try to delete an app from a user hasn't created the app
 (deftest handle-apps--sad-cases
   (testing "Apps from the same owner shouldn't have the same name"
     (db/setup-database)
