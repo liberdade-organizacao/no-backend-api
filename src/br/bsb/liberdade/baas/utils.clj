@@ -23,14 +23,12 @@
     (map #(.getName %) files)))
 
 (defn read-sql-dir [dir]
-  (let [all-files (list-dir dir)
-        files (->> all-files
-                   (filter #(re-find #"(.*?)\.sql$" %)))
-        outlet (reduce (fn [state file]
-                         (assoc state 
-                                file
-                                (slurp (str dir "/" file)))) 
-                       {}
-                       files)]
-    outlet))
+   (->> dir
+        list-dir
+        (filter #(re-find #"(.*?)\.sql$" %))
+        (reduce (fn [state file]
+                  (assoc state
+                         file
+                         (slurp (str dir "/" file))))
+                {})))
 
