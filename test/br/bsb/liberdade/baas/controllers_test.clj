@@ -4,7 +4,7 @@
             [br.bsb.liberdade.baas.db :as db]
             [br.bsb.liberdade.baas.controllers :as controllers]))
 
-(deftest handle-clients-accounts-happy-cases
+(deftest handle-clients-accounts--happy-cases
   (testing "Can create an account and login"
     (do
       (db/setup-database)
@@ -26,7 +26,7 @@
         (is is-second-error-nil?))
       (db/drop-database))))
 
-(deftest handle-clients-accounts-sad-cases
+(deftest handle-clients-accounts--sad-cases
   (testing "Clients try to login with wrong password"
     (db/setup-database)
     (db/run-migrations)
@@ -57,4 +57,27 @@
       (is (nil? second-auth-key))
       (is (some? second-error)))
     (db/drop-database)))
+
+(deftest handle-apps--happy-cases
+  (testing "User can create and delete an app"
+    (db/setup-database)
+    (db/run-migrations)
+    (let [email "client1@example.net"
+          password "password"
+          result (controllers/new-client email password false)
+          auth-key (get result "auth_key" nil)
+          app-name "My Shiny App"
+          result (controllers/new-app auth-key app-name)
+          app-auth-key (get result "auth_key" nil)
+          first-error (get result "error" nil)
+          result (controllers/delete-app auth-key app-auth-key)
+          second-error (get result "error" nil)]
+      (is (some? app-auth-key))
+      (is (nil? first-error))
+      ; TODO list apps to check if the app was there in the first place
+      (is (nil? second-error)))
+    (db/drop-database)))
+
+; TODO try to delete an app from a user hasn't created the app
+; IDEA rename "controllers" "business"
 
