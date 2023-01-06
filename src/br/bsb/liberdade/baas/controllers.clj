@@ -82,8 +82,12 @@
          (apply format-new-app-output-xf))))
 
 (defn get-clients-apps [client-auth-key]
-  {"apps" nil
-   "error" "not implemented yet!"})
+  (let [client-info (utils/decode-secret client-auth-key)
+        email (:email client-info)
+        result (db/run-operation-many "get-clients-apps.sql"
+                                      {"email" email})]
+    {"apps" result
+     "error" nil}))
 
 (defn- get-client-role-in-app-xf [state params]
   (cond (some? (:error state)) 
