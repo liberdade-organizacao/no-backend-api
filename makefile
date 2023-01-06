@@ -1,3 +1,5 @@
+PORT=3000
+
 .PHONY: default
 default: build
 
@@ -8,6 +10,14 @@ psql:
 .PHONY: test
 test:
 	lein test
+
+.PHONY: integration-test
+integration-test:
+	lein run migrate-up
+	lein run up &
+	bb integration/network_test.clj
+	# fuser -k $(PORT)/tcp
+	lsof -i tcp:$(PORT) | grep -v PID | awk '{print $$2}' | xargs kill
 
 .PHONY: build
 build: test
