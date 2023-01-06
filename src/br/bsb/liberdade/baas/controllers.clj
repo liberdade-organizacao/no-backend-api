@@ -2,6 +2,8 @@
   (:require [br.bsb.liberdade.baas.utils :as utils]
             [br.bsb.liberdade.baas.db :as db]))
 
+(def possible-app-roles ["admin" "contributor"])
+
 (defn- pqbool [b]
   (if b "on" "off"))
 
@@ -32,42 +34,48 @@
     {"auth_key" auth-key
      "error" error}))
 
-(defn- spy [it]
-  (prn it)
-  it)
-
 (defn- insert-app-xf [state params]
-  (let [error (get state "error" nil)]
-    (if (some? error)
-      [state params]
-      (let [_ (spy params)
-            client-email (:client-email params)
-            app-name (:app-name params)
-            app-auth-key (utils/encode-secret {"owner_email" client-email
-                                              "app_name" app-name})
-            ; JOE TODO figure out why this operation fails!
-            result (db/run-operation "create-app.sql"
-                                     {"owner_client_email" client-email
-                                      "app_name" app-name
-                                      "auth_key" app-auth-key})]
-        (spy result)
-        [state params]))))
+  (if (some? (:error state))
+    [state params]
+    (let [client-email (:client-email params)
+          app-name (:app-name params)
+          app-auth-key (utils/encode-secret {"owner_email" client-email
+                                             "app_name" app-name})
+          result (db/run-operation "create-app.sql"
+                                   {"owner_client_email" client-email
+                                    "app_name" app-name
+                                    "auth_key" app-auth-key})
+          next-state (assoc result :error nil)
+          next-params (assoc params :app-auth-key app-auth-key)]
+      [next-state next-params])))
 
 (defn- invite-to-app-xf [state params]
-  [(assoc state "error" "not implemented yet!")
-   params])
+  (if (some? (:error state))
+    [state params]
+    (let [app-id (:id state)
+          owner-id (:owner_id state)
+          role "admin"
+          result (db/run-operation "invite-to-app.sql"
+                                   {"app_id" app-id
+                                    "client_id" owner-id
+                                    "role" role})
+          next-state (assoc result :error nil)
+          next-params params]
+      [next-state next-params])))
+
+(defn- format-new-app-output-xf [state params]
+  {"error" (:error state)
+   "auth_key" (get params :app-auth-key nil)})
 
 (defn new-app [client-auth-key app-name]
   (let [client-info (utils/decode-secret client-auth-key)
-        _ (spy client-info)
         email (:email client-info)]
-    (->> [{"error" nil} 
+    (->> [{:error nil} 
           {:client-email email
            :app-name app-name}]
          (apply insert-app-xf)
          (apply invite-to-app-xf)
-         first
-         spy)))
+         (apply format-new-app-output-xf))))
 
 (defn get-clients-apps [client-auth-key]
   {"apps" nil
