@@ -81,6 +81,47 @@
   {"apps" nil
    "error" "not implemented yet!"})
 
+(defn- get-client-role-in-app-xf [state params]
+  (cond (some? (:error state)) 
+          [state params]
+        (= (:owner-email params) (:client-email params)) 
+          [state (assoc params :role "admin")]
+        :else
+          (let [owner-email (:owner-email params)
+                client-email (:client-email params)
+                app-name (:app-name params)
+                result (db/run-operation "get-client-app-role.sql"
+                                         {"owner_email" owner-email
+                                          "client_email" client-email
+                                          "app_name" app-name})]
+            [state (assoc params :role (:role result))])))
+
+(defn- maybe-delete-app-xf [state params]
+  (cond (some? (:error state))
+          [state params]
+        (not= (:role params) "admin")
+          [(assoc state :error "User not allowed to delete app")
+           params]
+        :else
+          (let [owner-email (:owner-email params)
+                app-name (:app-name params)
+                result (db/run-operation "delete-app.sql"
+                                         {"owner_email" owner-email
+                                          "app_name" app-name})]
+            [state params])))
+
 (defn delete-app [client-auth-key app-auth-key]
-  {"error" "not implemented yet!"})
+  (let [client-info (utils/decode-secret client-auth-key)
+        client-email (:email client-info)
+        app-info (utils/decode-secret app-auth-key)
+        owner-email (:owner_email app-info)
+        app-name (:app_name app-info)]
+    (->> [{:error nil}
+          {:client-email client-email
+           :owner-email owner-email
+           :app-name app-name}]
+         (apply get-client-role-in-app-xf)
+         (apply maybe-delete-app-xf)
+         ; abusing the fact state var only carries error value
+         first)))
 
