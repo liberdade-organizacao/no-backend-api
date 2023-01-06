@@ -44,9 +44,30 @@
         password (get params "password")]
     (boilerplate (controllers/auth-client email password))))
 
+(defn create-app [req]
+  (let [params (json/read-str (slurp (:body req)))
+        auth-key (get params "auth_key")
+        app-name (get params "app_name")]
+    (boilerplate (controllers/new-app auth-key app-name))))
+
+(defn list-apps [req]
+  (let [query-string (:query-string req)
+        search-params (url-search-params query-string)
+        auth-key (get search-params "auth_key")]
+    (boilerplate (controllers/get-clients-apps auth-key))))
+
+(defn delete-app [req]
+  (let [params (json/read-str (slurp (:body req)))
+        client-auth-key (get params "client_auth_key")
+        app-auth-key (get params "app_auth_key")]
+    (boilerplate (controllers/delete-app client-auth-key app-auth-key))))
+
 (defroutes app-routes
   (POST "/clients/signup" [] clients-signup)
   (POST "/clients/login" [] clients-login)
+  (POST "/apps" [] create-app)
+  (GET "/apps" [] list-apps)
+  (DELETE "/apps" [] delete-app)
   (GET "/health" [] check-health))
 
 ; ################

@@ -114,7 +114,7 @@
           (let [owner-email (:owner-email params)
                 app-name (:app-name params)
                 result (db/run-operation "delete-app.sql"
-                                         {"owner_email" owner-email
+                                         {"client_email" owner-email
                                           "app_name" app-name})]
             [state params])))
 

@@ -71,13 +71,16 @@
           app-auth-key (get result "auth_key" nil)
           first-error (get result "error" nil)
           result (controllers/get-clients-apps auth-key)
-          apps (get result "apps" nil)
+          apps-before-deletion (get result "apps" nil)
           result (controllers/delete-app auth-key app-auth-key)
-          second-error (get result "error" nil)]
+          second-error (get result "error" nil)
+          result (controllers/get-clients-apps auth-key)
+          apps-after-deletion (get result "apps" nil)]
       (is (some? app-auth-key))
       (is (nil? first-error))
-      (is (pos? (count apps)))
-      (is (nil? second-error)))
+      (is (pos? (count apps-before-deletion)))
+      (is (nil? second-error))
+      (is (= 0 (count apps-after-deletion))))
     (db/drop-database)))
 
 (deftest handle-apps--sad-cases
