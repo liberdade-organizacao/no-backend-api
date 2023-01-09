@@ -1,4 +1,4 @@
-(ns br.bsb.liberdade.baas.controllers
+(ns br.bsb.liberdade.baas.business
   (:require [br.bsb.liberdade.baas.utils :as utils]
             [br.bsb.liberdade.baas.db :as db]))
 
