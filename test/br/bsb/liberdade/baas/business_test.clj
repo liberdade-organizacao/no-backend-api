@@ -118,5 +118,21 @@
           result (biz/delete-app client-auth-key app-auth-key)
           error (get result "error" nil)]
       (is (some? error)))
+    (db/drop-database))
+  (testing "Users using the wrong auth key shouldn't be able to do anything"
+    (db/setup-database)
+    (db/run-migrations)
+    (let [result (biz/new-client "owner@example.net" "pwd" false)
+          owner-auth-key (get result "auth_key" nil)
+          result (biz/new-client "client@example.net" "pwd" false)
+          client-auth-key (get result "auth_key" nil)
+          app-name "seras victoria"
+          wrong-auth-key "random auth key"
+          result (biz/new-app owner-auth-key app-name)
+          app-auth-key (get result "auth_key" nil)
+          result (biz/delete-app wrong-auth-key app-auth-key)
+          error (get result "error" nil)]
+      (is (some? error)))
     (db/drop-database)))
+
 
