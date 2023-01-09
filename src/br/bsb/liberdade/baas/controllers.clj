@@ -17,7 +17,7 @@
                   "password" (utils/hide password)
                   "is_admin" (pqbool is-admin)
                   "auth_key" (new-auth-key email is-admin)}
-          result (db/run-operation "create-client-account.sql" params)]
+          result (db/run-operation-first  "create-client-account.sql" params)]
       {"auth_key" (get result :auth_key)
        "error" nil})
     (catch org.postgresql.util.PSQLException e 
@@ -27,7 +27,7 @@
 (defn auth-client [email password]
   (let [params {"email" email
                 "password" (utils/hide password)}
-        result (db/run-operation "auth-client.sql" params)
+        result (db/run-operation-first "auth-client.sql" params)
         auth-key (get result :auth_key nil)
         error (when (nil? auth-key)
                 "Wrong email or password")]
@@ -42,7 +42,7 @@
             app-name (:app-name params)
             app-auth-key (utils/encode-secret {"owner_email" client-email
                                                "app_name" app-name})
-            result (db/run-operation "create-app.sql"
+            result (db/run-operation-first "create-app.sql"
                                      {"owner_client_email" client-email
                                       "app_name" app-name
                                       "auth_key" app-auth-key})
@@ -59,7 +59,7 @@
     (let [app-id (:id state)
           owner-id (:owner_id state)
           role "admin"
-          result (db/run-operation "invite-to-app.sql"
+          result (db/run-operation-first "invite-to-app.sql"
                                    {"app_id" app-id
                                     "client_id" owner-id
                                     "role" role})
@@ -84,7 +84,7 @@
 (defn get-clients-apps [client-auth-key]
   (let [client-info (utils/decode-secret client-auth-key)
         email (:email client-info)
-        result (db/run-operation-many "get-clients-apps.sql"
+        result (db/run-operation "get-clients-apps.sql"
                                       {"email" email})]
     {"apps" result
      "error" nil}))
@@ -98,7 +98,7 @@
           (let [owner-email (:owner-email params)
                 client-email (:client-email params)
                 app-name (:app-name params)
-                result (db/run-operation "get-client-app-role.sql"
+                result (db/run-operation-first "get-client-app-role.sql"
                                          {"owner_email" owner-email
                                           "client_email" client-email
                                           "app_name" app-name})]
@@ -113,7 +113,7 @@
         :else
           (let [owner-email (:owner-email params)
                 app-name (:app-name params)
-                result (db/run-operation "delete-app.sql"
+                result (db/run-operation-first "delete-app.sql"
                                          {"client_email" owner-email
                                           "app_name" app-name})]
             [state params])))
