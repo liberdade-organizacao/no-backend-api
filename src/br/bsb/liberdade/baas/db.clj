@@ -102,11 +102,8 @@
   (let [raw-sql (get sql-operations operation)
         query (strint/strint raw-sql params)
         result (execute-query query)]
-    (first result)))
-
-(defn run-operation-many [operation params]
-  (let [raw-sql (get sql-operations operation)
-        query (strint/strint raw-sql params)
-        result (execute-query query)]
     result))
+
+(defn run-operation-first [operation params]
+  (first (run-operation operation params)))
 
