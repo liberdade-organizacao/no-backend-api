@@ -9,7 +9,7 @@
             [jumblerg.middleware.cors :refer [wrap-cors]]
             [selmer.parser :refer :all]
             [br.bsb.liberdade.baas.db :as db]
-            [br.bsb.liberdade.baas.controllers :as controllers]))
+            [br.bsb.liberdade.baas.business :as biz]))
 
 ; #############
 ; # UTILITIES #
@@ -36,31 +36,31 @@
   (let [params (json/read-str (slurp (:body req)))
         email (get params "email")
         password (get params "password")]
-    (boilerplate (controllers/new-client email password false))))
+    (boilerplate (biz/new-client email password false))))
 
 (defn clients-login [req]
   (let [params (json/read-str (slurp (:body req)))
         email (get params "email")
         password (get params "password")]
-    (boilerplate (controllers/auth-client email password))))
+    (boilerplate (biz/auth-client email password))))
 
 (defn create-app [req]
   (let [params (json/read-str (slurp (:body req)))
         auth-key (get params "auth_key")
         app-name (get params "app_name")]
-    (boilerplate (controllers/new-app auth-key app-name))))
+    (boilerplate (biz/new-app auth-key app-name))))
 
 (defn list-apps [req]
   (let [query-string (:query-string req)
         search-params (url-search-params query-string)
         auth-key (get search-params "auth_key")]
-    (boilerplate (controllers/get-clients-apps auth-key))))
+    (boilerplate (biz/get-clients-apps auth-key))))
 
 (defn delete-app [req]
   (let [params (json/read-str (slurp (:body req)))
         client-auth-key (get params "client_auth_key")
         app-auth-key (get params "app_auth_key")]
-    (boilerplate (controllers/delete-app client-auth-key app-auth-key))))
+    (boilerplate (biz/delete-app client-auth-key app-auth-key))))
 
 (defroutes app-routes
   (POST "/clients/signup" [] clients-signup)
