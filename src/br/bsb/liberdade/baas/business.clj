@@ -164,3 +164,14 @@
          invite-to-app-xf
          format-invite-to-app-output-xf)))
 
+(defn change-client-password [auth-key old-password new-password]
+  (let [client-info (utils/decode-secret auth-key)
+        client-id (:client_id client-info)
+        result (db/run-operation "change-client-password.sql"
+                                 {"client_id" client-id
+                                  "old_password" (utils/hide old-password)
+                                  "new_password" (utils/hide new-password)})]
+    {"error" (if (pos? (count result))
+               nil
+               "Failed to change password")}))
+

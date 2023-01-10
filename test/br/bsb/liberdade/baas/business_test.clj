@@ -231,3 +231,36 @@
       (is (= 0 (count invited-contrib-apps))))
     (db/drop-database)))
 
+(deftest clients-change-password
+  (testing "Clients change password -- happy case"
+    (db/setup-database)
+    (db/run-migrations)
+    (let [email "client@example.net"
+          old-password "old password"
+          result (biz/new-client email old-password false)
+          auth-key (get result "auth_key" nil)
+          new-password "new password"
+          result (biz/change-client-password auth-key old-password new-password)
+          error (get result "error" nil)
+          result (biz/auth-client email new-password)
+          auth-key-again (get result "auth_key" nil)]
+      (is (nil? error))
+      (is (= auth-key auth-key-again)))
+    (db/drop-database))
+  (testing "Clients change password -- wrong password"
+    (db/setup-database)
+    (db/run-migrations)
+    (let [email "client@example.net"
+          old-password "old password"
+          result (biz/new-client email old-password false)
+          auth-key (get result "auth_key" nil)
+          wrong-password "wrong password"
+          new-password "new password"
+          result (biz/change-client-password auth-key wrong-password new-password)
+          error (get result "error" nil)
+          result (biz/auth-client email new-password)
+          auth-key-again (get result "auth_key" nil)]
+      (is (some? error))
+      (is (not= auth-key auth-key-again)))
+    (db/drop-database)))
+
