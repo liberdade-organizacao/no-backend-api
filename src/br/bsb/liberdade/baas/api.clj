@@ -73,6 +73,15 @@
                                              invitee-email
                                              invitee-role))))
 
+(defn update-client-password [req]
+  (let [params (-> req :body slurp json/read-str)
+        client-auth-key (get params "auth_key" nil)
+        old-password (get params "old_password" nil)
+        new-password (get params "new_password" nil)]
+    (boilerplate (biz/change-client-password client-auth-key
+                                             old-password
+                                             new-password))))
+
 (defroutes app-routes
   (POST "/clients/signup" [] clients-signup)
   (POST "/clients/login" [] clients-login)
@@ -80,6 +89,7 @@
   (GET "/apps" [] list-apps)
   (DELETE "/apps" [] delete-app)
   (POST "/apps/invite" [] invite-to-app)
+  (POST "/clients/password" [] update-client-password)
   (GET "/health" [] check-health))
 
 ; ################
