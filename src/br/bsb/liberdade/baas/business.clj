@@ -8,11 +8,11 @@
   (if b "on" "off"))
 
 (defn new-client-auth-key [client-id is-admin]
-  (utils/encode-secret {"id" client-id
+  (utils/encode-secret {"client_id" client-id
                         "is_admin" is-admin}))
 
 (defn new-app-auth-key [app-id]
-  (utils/encode-secret {"id" app-id}))
+  (utils/encode-secret {"app_id" app-id}))
 
 (defn new-client [email password is-admin]
   (try
@@ -75,7 +75,7 @@
 
 (defn new-app [client-auth-key app-name]
   (let [client-info (utils/decode-secret client-auth-key)
-        client-id (:id client-info)]
+        client-id (:client_id client-info)]
     (->> [{:error nil} 
           {:client-id client-id
            :app-name app-name}]
@@ -85,7 +85,7 @@
 
 (defn get-clients-apps [client-auth-key]
   (let [client-info (utils/decode-secret client-auth-key)
-        client-id (:id client-info)
+        client-id (:client_id client-info)
         result (db/run-operation "get-clients-apps.sql"
                                       {"id" client-id})]
     {"apps" result
@@ -123,9 +123,9 @@
 
 (defn delete-app [client-auth-key app-auth-key]
   (let [client-info (utils/decode-secret client-auth-key)
-        client-id (:id client-info)
+        client-id (:client_id client-info)
         app-info (utils/decode-secret app-auth-key)
-        app-id (:id app-info)]
+        app-id (:app_id app-info)]
     (->> [{:error nil}
           {:client-id client-id
            :app-id app-id}]
