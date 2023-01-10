@@ -175,3 +175,13 @@
                nil
                "Failed to change password")}))
 
+(defn delete-client [auth-key password]
+  (let [client-info (utils/decode-secret auth-key)
+        client-id (:client_id client-info)
+        result (db/run-operation "delete-client.sql"
+                                 {"id" client-id
+                                  "password" (utils/hide password)})]
+    {"error" (if (pos? (count result))
+               nil
+               "Failed to delete account")}))
+

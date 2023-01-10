@@ -81,6 +81,11 @@
     (boilerplate (biz/change-client-password client-auth-key
                                              old-password
                                              new-password))))
+(defn delete-client [req]
+  (let [params (-> req :body slurp json/read-str)
+        auth-key (get params "auth_key" nil)
+        password (get params "password" nil)]
+    (boilerplate (biz/delete-client auth-key password))))
 
 (defroutes app-routes
   (POST "/clients/signup" [] clients-signup)
@@ -90,6 +95,7 @@
   (DELETE "/apps" [] delete-app)
   (POST "/apps/invite" [] invite-to-app)
   (POST "/clients/password" [] update-client-password)
+  (DELETE "/clients" [] delete-client)
   (GET "/health" [] check-health))
 
 ; ################

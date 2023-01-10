@@ -264,3 +264,40 @@
       (is (not= auth-key auth-key-again)))
     (db/drop-database)))
 
+(deftest delete-clients
+  (testing "Delete actual client and check if their stuff is not there anymore"
+    (db/setup-database)
+    (db/run-migrations)
+    (let [password "random password"
+          result (biz/new-client "user@example.net" password false)
+          client-auth-key (get result "auth_key" nil)
+          result (biz/new-app client-auth-key "delete client test app")
+          app-auth-key (get result "auth_key" nil)
+          result (biz/get-clients-apps client-auth-key)
+          apps-before (get result "apps" [])
+          result (biz/delete-client client-auth-key password)
+          error (get result "error" nil)
+          result (biz/get-clients-apps client-auth-key)
+          apps-after (get result "apps" [])]
+      (is (nil? error))
+      (is (pos? (count apps-before)))
+      (is (= 0 (count apps-after))))
+    (db/drop-database))
+  (testing "Fails to delete account if password is wrong"
+    (db/setup-database)
+    (db/run-migrations)
+    (let [result (biz/new-client "user@example.net" "correctPassword" false)
+          client-auth-key (get result "auth_key" nil)
+          result (biz/new-app client-auth-key "delete client test app")
+          app-auth-key (get result "auth_key" nil)
+          result (biz/get-clients-apps client-auth-key)
+          apps-before (get result "apps" [])
+          result (biz/delete-client client-auth-key "wrong password")
+          error (get result "error" nil)
+          result (biz/get-clients-apps client-auth-key)
+          apps-after (get result "apps" [])]
+      (is (some? error))
+      (is (pos? (count apps-before)))
+      (is (pos? (count apps-after))))
+    (db/drop-database)))
+
