@@ -135,4 +135,29 @@
       (is (some? error)))
     (db/drop-database)))
 
+(deftest invite-clients-to-apps--happy-case
+  (testing "clients can invite other clients to manage their apps"
+    (db/setup-database)
+    (db/run-migrations)
+    (let [result (biz/new-client "owner@example.net" "pwd" false)
+          owner-auth-key (get result "auth_key" nil)
+          invitee-email "invitee@example.net"
+          result (biz/new-client invitee-email "pwd2" false)
+          client-auth-key (get result "auth_key" nil)
+          result (biz/new-app owner-auth-key "invite test app")
+          app-auth-key (get result "auth_key" nil)
+          result (biz/invite-to-app-by-email owner-auth-key 
+                                             app-auth-key
+                                             invitee-email
+                                             "contributor")
+          first-error (get result "error" nil)
+          result (biz/get-clients-apps client-auth-key)
+          apps (get result "apps" nil)]
+      (is (nil? first-error))
+      (is (pos? (count apps))))
+    (db/drop-database)))
+
+; TODO test if invited admin can invite other clients to the app
+; TODO test invite client if their account does not exist
+; TODO test if request fails when inviter has no rights within the app
 

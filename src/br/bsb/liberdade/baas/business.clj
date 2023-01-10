@@ -37,38 +37,34 @@
     {"auth_key" auth-key
      "error" error}))
 
-(defn- insert-app-xf [state params]
+(defn- insert-app-xf [state]
   (if (some? (:error state))
-    [state params]
+    state
     (try
-      (let [client-id (:client-id params)
-            app-name (:app-name params)
+      (let [client-id (:client-id state)
+            app-name (:app-name state)
             result (db/run-operation-first "create-app.sql"
                                      {"owner_id" client-id
                                       "app_name" app-name})
             app-id (:id result)
-            next-state (assoc result :app-id app-id)
-            next-params params]
-        [next-state next-params])
+            next-state (assoc state :app-id app-id)]
+        next-state)
       (catch org.postgresql.util.PSQLException e
-        [{:error e}
-         params]))))
+        {:error e}))))
 
-(defn- invite-to-app-xf [state params]
+(defn- invite-to-app-xf [state]
   (if (some? (:error state))
-    [state params]
+    state
     (let [app-id (:app-id state)
-          owner-id (:client-id params)
-          role "admin"
+          owner-id (:client-id state)
+          role (:role state)
           result (db/run-operation-first "invite-to-app.sql"
                                    {"app_id" app-id
                                     "client_id" owner-id
-                                    "role" role})
-          next-state state
-          next-params params]
-      [next-state next-params])))
+                                    "role" role})]
+      state)))
 
-(defn- format-new-app-output-xf [state params]
+(defn- format-new-app-output-xf [state]
   {"error" (:error state)
    "auth_key" (when (some? (:app-id state))
                 (new-app-auth-key (:app-id state)))})
@@ -76,12 +72,13 @@
 (defn new-app [client-auth-key app-name]
   (let [client-info (utils/decode-secret client-auth-key)
         client-id (:client_id client-info)]
-    (->> [{:error nil} 
-          {:client-id client-id
-           :app-name app-name}]
-         (apply insert-app-xf)
-         (apply invite-to-app-xf)
-         (apply format-new-app-output-xf))))
+    (->> {:error nil 
+          :client-id client-id
+          :app-name app-name
+          :role "admin"}
+         insert-app-xf
+         invite-to-app-xf
+         format-new-app-output-xf)))
 
 (defn get-clients-apps [client-auth-key]
   (let [client-info (utils/decode-secret client-auth-key)
@@ -91,34 +88,32 @@
     {"apps" result
      "error" nil}))
 
-(defn- get-client-role-in-app-xf [state params]
+(defn- get-client-role-in-app-xf [state]
   (cond 
     (some? (:error state))
-      [state params]
-    (nil? (:client-id params))
-      [{:error "Invalid client"}
-       params]
+      state
+    (nil? (:client-id state))
+      {:error "Invalid client"}
     :else
-      (let [client-id (:client-id params)
-            app-id (:app-id params)
+      (let [client-id (:client-id state)
+            app-id (:app-id state)
             result (db/run-operation-first "get-client-app-role.sql"
                                            {"client_id" client-id
                                             "app_id" app-id})]
-        [state (assoc params :role (:role result))])))
+        (assoc state :role (:role result)))))
 
-(defn- maybe-delete-app-xf [state params]
+(defn- maybe-delete-app-xf [state]
   (cond (some? (:error state))
-          [state params]
-        (not= (:role params) "admin")
-          [(assoc state :error "User not allowed to delete app")
-           params]
+          state
+        (not= (:role state) "admin")
+          (assoc state :error "User not allowed to delete app")
         :else
-          (let [app-id (:app-id params)
+          (let [app-id (:app-id state)
                 result (db/run-operation-first "delete-app.sql"
                                                {"app_id" app-id})]
-            [state params])))
+            state)))
 
-(defn format-delete-app-output-xf [state params]
+(defn format-delete-app-output-xf [state]
   {"error" (get state :error nil)})
 
 (defn delete-app [client-auth-key app-auth-key]
@@ -126,10 +121,46 @@
         client-id (:client_id client-info)
         app-info (utils/decode-secret app-auth-key)
         app-id (:app_id app-info)]
-    (->> [{:error nil}
-          {:client-id client-id
-           :app-id app-id}]
-         (apply get-client-role-in-app-xf)
-         (apply maybe-delete-app-xf)
-         (apply format-delete-app-output-xf))))
+    (->> {:error nil
+          :client-id client-id
+          :app-id app-id}
+         get-client-role-in-app-xf
+         maybe-delete-app-xf
+         format-delete-app-output-xf)))
+
+(defn- validate-inviter-role-xf [state]
+  (if (not= "admin" (:role state))
+    {:error "Inviter has no rights to do this"}
+    state))
+
+(defn- get-invitee-client-id-by-email-xf [state]
+  (if (some? (:error state))
+    state
+    (let [result (db/run-operation-first "get-client-by-email.sql"
+                                         {"email" (:invitee-email state)})
+          client-id (get result :id nil)]
+      (if (nil? client-id)
+        {:error "Invitee email not found"}
+        (assoc state :client-id client-id
+                     :role (:invitee-role state))))))
+
+(defn- format-invite-to-app-output-xf [state]
+  {"error" (:error state)})
+
+(defn invite-to-app-by-email 
+  [inviter-auth-key app-auth-key invitee-email invitee-role]
+  (let [inviter-info (utils/decode-secret inviter-auth-key)
+        inviter-id (:client_id inviter-info)
+        app-info (utils/decode-secret app-auth-key)
+        app-id (:app_id app-info)]
+    (->> {:error nil
+          :client-id inviter-id
+          :app-id app-id
+          :invitee-email invitee-email
+          :invitee-role invitee-role}
+         get-client-role-in-app-xf
+         validate-inviter-role-xf
+         get-invitee-client-id-by-email-xf
+         invite-to-app-xf
+         format-invite-to-app-output-xf)))
 
