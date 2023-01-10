@@ -159,7 +159,6 @@
   (testing "Invited admins can invite other users"
     (db/setup-database)
     (db/run-migrations)
-    ; TODO complete me!
     (let [result (biz/new-client "owner@example.net" "ownerpwd" false)
           owner-auth-key (get result "auth_key" nil)
           invited-admin-email "invited_admin@example.net"
@@ -186,6 +185,49 @@
       (is (pos? (count invited-contrib-apps))))
     (db/drop-database)))
 
-; TODO test invite client if their account does not exist
-; TODO test if request fails when inviter has no rights within the app
+(deftest invite-clients-to-apps--sad-cases
+  (testing "Inexistent accounts cant be invited"
+    (db/setup-database)
+    (db/run-migrations)
+    (let [result (biz/new-client "owner@example.net" "pwd" false)
+          client-auth-key (get result "auth_key" nil)
+          result (biz/new-app client-auth-key "yet another test app")
+          app-auth-key (get result "auth_key" nil)
+          result (biz/invite-to-app-by-email client-auth-key
+                                             app-auth-key
+                                             "not_here@example.net"
+                                             "contributor")
+          error (get result "error" nil)]
+      (is (some? error)))
+    (db/drop-database))
+  (testing "Contributors cant invite to apps"
+    (db/setup-database)
+    (db/run-migrations)
+    (let [result (biz/new-client "owner@example.net" "ownerpwd" false)
+          owner-auth-key (get result "auth_key" nil)
+          invited-admin-email "invited_admin@example.net"
+          result (biz/new-client invited-admin-email "pwd" false)
+          invited-admin-auth-key (get result "auth_key" nil)
+          invited-contrib-email "invited_contributor@example.net"
+          result (biz/new-client invited-contrib-email "pwd2" false)
+          invited-contrib-auth-key (get result "auth_key" nil)
+          result(biz/new-app owner-auth-key "invitation test app")
+          app-auth-key (get result "auth_key" nil)
+          result (biz/invite-to-app-by-email owner-auth-key 
+                                             app-auth-key
+                                             invited-admin-email
+                                             "contributor")
+          result (biz/get-clients-apps invited-admin-auth-key)
+          invited-admin-apps (get result "apps" [])
+          result (biz/invite-to-app-by-email invited-admin-auth-key
+                                             app-auth-key
+                                             invited-contrib-email
+                                             "contributor")
+          bad-invitation-error (get result "error" nil)
+          result (biz/get-clients-apps invited-contrib-auth-key)
+          invited-contrib-apps (get result "apps" [])]
+      (is (pos? (count invited-admin-apps)))
+      (is (some? bad-invitation-error))
+      (is (= 0 (count invited-contrib-apps))))
+    (db/drop-database)))
 
