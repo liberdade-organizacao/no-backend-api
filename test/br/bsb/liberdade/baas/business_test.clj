@@ -155,9 +155,37 @@
           apps (get result "apps" nil)]
       (is (nil? first-error))
       (is (pos? (count apps))))
+    (db/drop-database))
+  (testing "Invited admins can invite other users"
+    (db/setup-database)
+    (db/run-migrations)
+    ; TODO complete me!
+    (let [result (biz/new-client "owner@example.net" "ownerpwd" false)
+          owner-auth-key (get result "auth_key" nil)
+          invited-admin-email "invited_admin@example.net"
+          result (biz/new-client invited-admin-email "pwd" false)
+          invited-admin-auth-key (get result "auth_key" nil)
+          invited-contrib-email "invited_contributor@example.net"
+          result (biz/new-client invited-contrib-email "pwd2" false)
+          invited-contrib-auth-key (get result "auth_key" nil)
+          result(biz/new-app owner-auth-key "invitation test app")
+          app-auth-key (get result "auth_key" nil)
+          result (biz/invite-to-app-by-email owner-auth-key 
+                                             app-auth-key
+                                             invited-admin-email
+                                             "admin")
+          result (biz/get-clients-apps invited-admin-auth-key)
+          invited-admin-apps (get result "apps" [])
+          result (biz/invite-to-app-by-email invited-admin-auth-key
+                                             app-auth-key
+                                             invited-contrib-email
+                                             "contributor")
+          result (biz/get-clients-apps invited-contrib-auth-key)
+          invited-contrib-apps (get result "apps" [])]
+      (is (pos? (count invited-admin-apps)))
+      (is (pos? (count invited-contrib-apps))))
     (db/drop-database)))
 
-; TODO test if invited admin can invite other clients to the app
 ; TODO test invite client if their account does not exist
 ; TODO test if request fails when inviter has no rights within the app
 
