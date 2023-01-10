@@ -62,12 +62,24 @@
         app-auth-key (get params "app_auth_key")]
     (boilerplate (biz/delete-app client-auth-key app-auth-key))))
 
+(defn invite-to-app [req]
+  (let [params (-> req :body slurp json/read-str)
+        inviter-auth-key (get params "inviter_auth_key" nil)
+        app-auth-key (get params "app_auth_key" nil)
+        invitee-email (get params  "invitee_email" nil)
+        invitee-role (get params "invitee_role" "contributor")]
+    (boilerplate (biz/invite-to-app-by-email inviter-auth-key
+                                             app-auth-key
+                                             invitee-email
+                                             invitee-role))))
+
 (defroutes app-routes
   (POST "/clients/signup" [] clients-signup)
   (POST "/clients/login" [] clients-login)
   (POST "/apps" [] create-app)
   (GET "/apps" [] list-apps)
   (DELETE "/apps" [] delete-app)
+  (POST "/apps/invite" [] invite-to-app)
   (GET "/health" [] check-health))
 
 ; ################
