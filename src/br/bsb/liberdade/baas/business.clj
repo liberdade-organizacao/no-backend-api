@@ -213,7 +213,13 @@
      "auth_key" (when (some? user-id)
                   (new-user-auth-key app-id user-id))}))
 
-; TODO complete me!
 (defn delete-user [user-auth-key password]
-  {"error" "Not implemented yet!"})
+  (let [user-info (utils/decode-secret user-auth-key)
+        app-id (:app_id user-info)
+	user-id (:user_id user-info)
+	params {"user_id" user-id
+	        "password" (utils/hide password)}
+	result (db/run-operation "delete-user.sql" params)]
+    {"error" (when (= 0 (count result))
+               "Failed to delete user")}))
 
