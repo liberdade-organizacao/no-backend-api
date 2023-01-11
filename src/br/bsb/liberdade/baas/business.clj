@@ -223,3 +223,16 @@
     {"error" (when (= 0 (count result))
                "Failed to delete user")}))
 
+(defn upload-user-file [user-auth-key filename contents]
+  (let [user-info (utils/decode-secret user-auth-key)]
+    {"error" "not implemented yet!"}))
+
+(defn download-user-file [user-auth-key filename]
+  "KO")
+
+(defn list-user-files [user-auth-key]
+  "KO")
+
+(defn delete-user-file [user-auth-key filename]
+  {"error" "not implemented yet!"})
+

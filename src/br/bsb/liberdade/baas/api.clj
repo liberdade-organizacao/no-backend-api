@@ -90,22 +90,45 @@
 (defn users-signup [req]
   (let [params (-> req :body slurp json/read-str)
         app-auth-key (get params "app_auth_key" nil)
-	email (get params "email" nil)
-	password (get params "password" nil)]
+        email (get params "email" nil)
+        password (get params "password" nil)]
     (boilerplate (biz/new-user app-auth-key email password))))
 
 (defn users-login [req]
   (let [params (-> req :body slurp json/read-str)
         app-auth-key (get params "app_auth_key" nil)
-	email (get params "email" nil)
-	password (get params "password" nil)]
+        email (get params "email" nil)
+        password (get params "password" nil)]
     (boilerplate (biz/auth-user app-auth-key email password))))
 
 (defn delete-user [req]
   (let [params (-> req :body slurp json/read-str)
         user-auth-key (get params "user_auth_key" nil)
-	password (get params "password" nil)]
+   	    password (get params "password" nil)]
     (boilerplate (biz/delete-user user-auth-key password))))
+
+(defn upload-user-file [req]
+  ; XXX is there other way of doing this without the need of headers?
+  ; XXX or maybe headers should be used everywhere?
+  (let [user-auth-key (-> req :headers (get "x-user-auth-key"))
+        filename (-> req :headers (get "x-filename"))
+        contents (-> req :body slurp)]
+    (boilerplate (biz/upload-user-file user-auth-key filename contents))))
+
+(defn download-user-file [req]
+  (let [user-auth-key nil
+        filename nil]
+    (biz/download-user-file user-auth-key filename)))
+
+(defn list-user-files [req]
+  (let [user-auth-key nil]
+    (biz/list-user-files user-auth-key)))
+
+(defn delete-user-file [req]
+  (let [params (-> req :body slurp json/read-str)
+        user-auth-key (get params "auth_key" nil)
+        filename (get params "filename" nil)]
+    (boilerplate (biz/delete-user-file user-auth-key filename))))
 
 (defroutes app-routes
   (POST "/clients/signup" [] clients-signup)
@@ -118,7 +141,10 @@
   (DELETE "/clients" [] delete-client)
   (POST "/users/signup" [] users-signup)
   (POST "/users/login" [] users-login)
-  (DELETE "/users" delete-user)
+  (POST "/users/files" [] upload-user-file)
+  (GET "/users/files" [] download-user-file)
+  (GET "/users/files/list" [] list-user-files)
+  (DELETE "/users/files" [] delete-user-file)
   (GET "/health" [] check-health))
 
 ; ################
