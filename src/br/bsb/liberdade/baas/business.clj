@@ -14,6 +14,10 @@
 (defn new-app-auth-key [app-id]
   (utils/encode-secret {"app_id" app-id}))
 
+(defn new-user-auth-key [app-id user-id]
+  (utils/encode-secret {"user_id" user-id
+                        "app_id" app-id}))
+
 (defn new-client [email password is-admin]
   (try
     (let [params {"email" email
@@ -184,4 +188,32 @@
     {"error" (if (pos? (count result))
                nil
                "Failed to delete account")}))
+
+(defn new-user [app-auth-key email password]
+  (let [app-info (utils/decode-secret app-auth-key)
+        app-id (get app-info :app_id nil)
+	params {"app_id" app-id
+	        "email" email
+		"password" (utils/hide password)}
+	result (db/run-operation-first "create-user.sql" params)
+	user-id (get result :id)]
+    {"error" (when (nil? user-id) "Could not create user")
+     "auth_key" (when (some? user-id)
+                  (new-user-auth-key app-id user-id))}))
+
+(defn auth-user [app-auth-key email password]
+  (let [app-id (-> app-auth-key utils/decode-secret :app_id)
+        params {"app_id" app-id
+	        "email" email
+		"password" (utils/hide password)}
+	result (db/run-operation-first "auth-user.sql" params)
+	user-id (:id result)]
+    {"error" (when (nil? user-id)
+               "Could not authorize user")
+     "auth_key" (when (some? user-id)
+                  (new-user-auth-key app-id user-id))}))
+
+; TODO complete me!
+(defn delete-user [user-auth-key password]
+  {"error" "Not implemented yet!"})
 

@@ -87,6 +87,26 @@
         password (get params "password" nil)]
     (boilerplate (biz/delete-client auth-key password))))
 
+(defn users-signup [req]
+  (let [params (-> req :body slurp json/read-str)
+        app-auth-key (get params "app_auth_key" nil)
+	email (get params "email" nil)
+	password (get params "password" nil)]
+    (boilerplate (biz/new-user app-auth-key email password))))
+
+(defn users-login [req]
+  (let [params (-> req :body slurp json/read-str)
+        app-auth-key (get params "app_auth_key" nil)
+	email (get params "email" nil)
+	password (get params "password" nil)]
+    (boilerplate (biz/auth-user app-auth-key email password))))
+
+(defn delete-user [req]
+  (let [params (-> req :body slurp json/read-str)
+        user-auth-key (get params "user_auth_key" nil)
+	password (get params "password" nil)]
+    (boilerplate (biz/delete-user user-auth-key password))))
+
 (defroutes app-routes
   (POST "/clients/signup" [] clients-signup)
   (POST "/clients/login" [] clients-login)
@@ -96,6 +116,9 @@
   (POST "/apps/invite" [] invite-to-app)
   (POST "/clients/password" [] update-client-password)
   (DELETE "/clients" [] delete-client)
+  (POST "/users/signup" [] users-signup)
+  (POST "/users/login" [] users-login)
+  (DELETE "/users" delete-user)
   (GET "/health" [] check-health))
 
 ; ################

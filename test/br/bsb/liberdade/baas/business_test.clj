@@ -301,3 +301,37 @@
       (is (pos? (count apps-after))))
     (db/drop-database)))
 
+(deftest user-accounts
+  (testing "User can create account on app and login"
+    (db/setup-database)
+    (db/run-migrations)
+    (let [result (biz/new-client "owner@example.net" "password" false)
+          client-auth-key (get result "auth_key" nil)
+	  result (biz/new-app client-auth-key "user account test app")
+	  app-auth-key (get result "auth_key" nil)
+	  user-email "coolguy@hotmail.com"
+	  user-password "cool guy yo"
+	  result (biz/new-user app-auth-key user-email user-password)
+	  user-auth-key (get result "auth_key" nil)
+	  first-error (get result "error" nil)
+	  result (biz/auth-user app-auth-key user-email user-password)
+	  user-auth-key-again (get result "auth_key" nil)
+	  second-error (get result "error" nil)]
+      (is (some? user-auth-key))
+      (is (some? user-auth-key-again))
+      (is (= user-auth-key user-auth-key-again))
+      (is (nil? first-error))
+      (is (nil? second-error)))
+    (db/drop-database))
+  (testing "User can create accounts on multiple apps with the same email"
+    (db/setup-database)
+    (db/run-migrations)
+    ; TODO complete me!
+    (let []
+      (is true))
+    (db/drop-database)))
+
+; TODO test if user cannot create account with the same email on the same app
+; TODO test if user cannot login with wrong password on app
+; TODO test if deleted user cannot login anymore
+
