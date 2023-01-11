@@ -346,7 +346,29 @@
       (is (nil? second-error)))
     (db/drop-database)))
 
-; TODO test if user cannot create account with the same email on the same app
-; TODO test if user cannot login with wrong password on app
-; TODO test if deleted user cannot login anymore
+(deftest user-accounts--error-handling
+  (testing "User cannot create accounts with the same email on the same app"
+    (db/setup-database)
+    (db/run-migrations)
+    (let [result (biz/new-client "owner@example.net" "password" false)
+          client-auth-key (get result "auth_key" nil)
+	  result (biz/new-app client-auth-key "first test app")
+	  app-auth-key (get result "auth_key" nil)
+	  user-email "coolguy@hotmail.com"
+	  user-password "cool guy yo"
+	  result (biz/new-user app-auth-key user-email user-password)
+	  first-user-auth-key (get result "auth_key" nil)
+	  first-error (get result "error" nil)
+	  result (biz/new-user app-auth-key user-email user-password)
+	  second-user-auth-key (get result "auth_key" nil)
+	  second-error (get result "error" nil)]
+      (is (some? first-user-auth-key))
+      (is (nil? first-error))
+      (is (nil? second-user-auth-key))
+      (is (some? second-error)))
+    (db/drop-database))
+  ; TODO complete me!
+  (testing "User cannot login with wrong password on app")
+  ; TODO complete me!
+  (testing "Deleted user cannot login anymore"))
 
