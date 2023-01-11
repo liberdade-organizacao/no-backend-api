@@ -1,6 +1,7 @@
 (ns br.bsb.liberdade.baas.integration-test.network-test
   (:require [babashka.curl :as curl]
             [cheshire.core :as json]
+            [clojure.java.io :as io]
             [clojure.java.shell :as shell]))
 
 (def service-url "http://localhost:3000")
@@ -87,8 +88,30 @@
     (println body)
     body))
 
+(defn- create-user [app-auth-key user-email user-password]
+  (let [url (str service-url "/users/signup")
+        params {"app_auth_key" app-auth-key
+                "email" user-email
+                "password" user-password}
+        response (curl/post url {:body (json/generate-string params)})
+        body (json/parse-string (get response :body))]
+    (println "# create user")
+    (println body)
+    body))
+
+(defn- upload-user-file [user-auth-key filename contents]
+  (let [url (str service-url "/users/files")
+        headers {"X-USER-AUTH-KEY" user-auth-key
+                 "X-FILENAME" filename}
+        response (curl/post url {:body contents
+                                 :headers headers})
+        body (json/parse-string (get response :body))]
+    (println "# upload file")
+    (println body)
+    body))
+
 (defn- main []
-  (let [email (str "u" (random-string 6) "@liberdade.bsb.br")
+  (let [email (str "c" (random-string 6) "@liberdade.bsb.br")
         password (random-string 12)]
     (when (wait-for-server 5)
       (println (str "email: " email))
@@ -99,10 +122,21 @@
             app-auth-key (-> (create-app auth-key (random-string 10))
                              (get "auth_key"))
             _ (list-apps auth-key)
+            user-email (str "u" (random-string 7) "@hotmail.com") 
+            user-password (random-string 7)
+            user-auth-key (-> (create-user app-auth-key 
+                                           user-email 
+                                           user-password)
+                              (get "auth_key"))
+            filename-local "./honey.png"
+            file-contents (slurp filename-local)
+            _ (upload-user-file user-auth-key 
+                                "honey.png" 
+                                (io/file filename-local))
             _ (delete-app auth-key app-auth-key)
             _ (list-apps auth-key)]
-        nil)
-      (println "..."))))
+        nil))
+    (println "...")))
 
 (main)
 
