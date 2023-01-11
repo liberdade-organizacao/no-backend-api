@@ -388,6 +388,32 @@
       (is (nil? second-user-auth-key))
       (is (some? second-error)))
     (db/drop-database))
-  ; TODO complete me!
-  (testing "Deleted user cannot login anymore"))
+  (testing "Deleted user cannot login anymore"
+    (db/setup-database)
+    (db/run-migrations)
+    (let [result (biz/new-client "owner@example.net" "password" false)
+          client-auth-key (get result "auth_key" nil)
+	  result (biz/new-app client-auth-key "first test app")
+	  app-auth-key (get result "auth_key" nil)
+	  user-email "coolguy@hotmail.com"
+	  user-password "cool guy yo"
+	  result (biz/new-user app-auth-key user-email user-password)
+	  first-user-auth-key (get result "auth_key" nil)
+	  first-error (get result "error" nil)
+	  result (biz/auth-user app-auth-key user-email user-password)
+	  second-user-auth-key (get result "auth_key" nil)
+	  second-error (get result "error" nil)
+	  result (biz/delete-user second-user-auth-key user-password)
+	  deletion-error (get result "error" nil)
+	  result (biz/auth-user app-auth-key user-email user-password)
+	  third-user-auth-key (get result "auth_key" nil)
+	  third-error (get result "error" nil)]
+      (is (some? first-user-auth-key))
+      (is (nil? first-error))
+      (is (some? second-user-auth-key))
+      (is (nil? second-error))
+      (is (nil? third-user-auth-key))
+      (is (some? third-error))
+      (is (nil? deletion-error)))
+    (db/drop-database)))
 
