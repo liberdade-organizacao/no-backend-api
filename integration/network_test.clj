@@ -119,6 +119,25 @@
     (println "# download file")
     body))
 
+(defn list-user-files [user-auth-key]
+  (let [url (str service-url "/users/files/list")
+        headers {"X-USER-AUTH-KEY" user-auth-key}
+	response (curl/get url {:headers headers})
+	body (-> response :body json/parse-string)]
+    (println "# list files")
+    (println body)
+    body))
+
+(defn delete-user-file [user-auth-key filename]
+  (let [url (str service-url "/users/files")
+        headers {"X-USER-AUTH-KEY" user-auth-key
+                 "X-FILENAME" filename}
+        response (curl/delete url {:headers headers})
+        body (:body response)]
+    (println "# delete file")
+    (println body)
+    body))
+
 (defn- main []
   (let [email (str "c" (random-string 6) "@liberdade.bsb.br")
         password (random-string 12)]
@@ -156,6 +175,9 @@
                                                     filename-cloud)
             _ (println (str "are files equal? " 
                             (= file-contents downloaded-contents)))
+	    _ (list-user-files user-auth-key)
+	    _ (delete-user-file user-auth-key filename-cloud)
+	    _ (list-user-files user-auth-key)
             _ (delete-app auth-key app-auth-key)
             _ (list-apps auth-key)]
         nil))
