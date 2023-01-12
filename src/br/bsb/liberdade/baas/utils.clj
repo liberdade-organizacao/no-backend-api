@@ -39,6 +39,9 @@
                          (slurp (str dir "/" file))))
                 {})))
 
+(defn in? [coll it]
+  (some #(= % it) coll))
+
 (defn spy [it]
   (println it)
   it)

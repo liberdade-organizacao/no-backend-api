@@ -496,3 +496,43 @@
       (is (= 1 (count filenames-after))))
     (db/drop-database)))
 
+(deftest list-app-files
+  (testing "Only admin and contrib clients can list app files"
+    (db/setup-database)
+    (db/run-migrations)
+    (let [result (biz/new-client "owner@example.net" "pwd" false)
+          owner-auth-key (get result "auth_key" nil)
+          result (biz/new-app owner-auth-key "test list files app")
+          app-auth-key (get result "auth_key" nil)
+	  contrib-email "contrib@example.net"
+	  result (biz/new-client contrib-email "passw" false)
+	  contrib-auth-key (get result "auth_key" nil)
+	  _ (biz/invite-to-app-by-email owner-auth-key
+	                                app-auth-key
+					contrib-email
+					"contributor")
+	  result (biz/new-client "thridparty@example.net" "asdf" false)
+	  thirdparty-auth-key (get result "auth_key" nil)
+	  result (biz/new-user app-auth-key "user@example.net" "evil twin")
+	  user-auth-key (get result "auth_key" nil)
+	  contents (slurp "resources/pokemon.jpg")
+	  _ (biz/upload-user-file user-auth-key "pokemon.jpg" contents)
+	  contents (slurp "resources/animal_crossing.jpg")
+	  _ (biz/upload-user-file user-auth-key "animal_crossing.jpg" contents)
+	  result (biz/list-app-files owner-auth-key app-auth-key)
+	  owner-error (get result "error" nil)
+	  owner-files (get result "files" nil)
+	  result (biz/list-app-files contrib-auth-key app-auth-key)
+	  contrib-error (get result "error" nil)
+	  contrib-files (get result "files" nil)
+	  result (biz/list-app-files thirdparty-auth-key app-auth-key)
+	  thirdparty-error (get result "error" nil)
+	  thirdparty-files (get result "files" nil)]
+      (is (nil? owner-error))
+      (is (pos? (count owner-files)))
+      (is (nil? contrib-error))
+      (is (pos? (count contrib-files)))
+      (is (some? thirdparty-error))
+      (is (= 0 (count thirdparty-files))))
+    (db/drop-database)))
+
