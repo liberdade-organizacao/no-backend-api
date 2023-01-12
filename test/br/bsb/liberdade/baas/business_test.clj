@@ -447,9 +447,21 @@
       (is (nil? update-error))
       (is (= final-contents final-contents-again))
       (is (not= initial-contents-again final-contents-again)))
+    (db/drop-database))
+  (testing "downloading inexistent files"
+    (db/setup-database)
+    (db/run-migrations)
+    (let [result (biz/new-client "owner@example.net" "password" false)
+          client-auth-key (get result "auth_key" nil)
+          result (biz/new-app client-auth-key "file test app")
+          app-auth-key (get result "auth_key" nil)
+          result (biz/new-user app-auth-key "fud@nft.io" "pwd")
+          user-auth-key (get result "auth_key" nil)
+          download-result (biz/download-user-file user-auth-key 
+                                                  "random_file.txt")]
+      (is (nil? download-result)))
     (db/drop-database)))
 
-; TODO try to download inexistent files
 ; TODO list files owned by a user
 ; TODO delete user files
 
