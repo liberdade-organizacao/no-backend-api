@@ -147,6 +147,7 @@
                                                     filename-cloud)
             _ (println (str "are files equal? " 
                             (= file-contents downloaded-contents)))
+            ; TODO test if updating files works
             _ (delete-app auth-key app-auth-key)
             _ (list-apps auth-key)]
         nil))
