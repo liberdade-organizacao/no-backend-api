@@ -266,8 +266,8 @@
         user-id (:user_id user-info)
         filepath (new-file-path app-id user-id filename)
         params {"filepath" filepath}
-        result (db/run-operation "delete-user-file.sql" params)]
-    {"error" (if (= 0 (count result))
+        result (db/run-operation "delete-file.sql" params)]
+    {"error" (if (pos? (count result))
                nil
                "Failed to delete this file")}))
 

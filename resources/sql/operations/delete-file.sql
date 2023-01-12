@@ -1,1 +1,1 @@
-DELETE FROM files WHERE filepath='%{filepath}' ON CONFLICT DO NOTHING RETURNING *;
+DELETE FROM files WHERE filepath='%{filepath}' RETURNING *;
