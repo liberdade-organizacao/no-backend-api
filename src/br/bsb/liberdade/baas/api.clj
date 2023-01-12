@@ -108,8 +108,6 @@
     (boilerplate (biz/delete-user user-auth-key password))))
 
 (defn upload-user-file [req]
-  ; XXX is there other way of doing this without the need of headers?
-  ; XXX or maybe headers should be used everywhere?
   (let [user-auth-key (-> req :headers (get "x-user-auth-key"))
         filename (-> req :headers (get "x-filename"))
         contents (-> req :body slurp)]
@@ -121,13 +119,15 @@
     (biz/download-user-file user-auth-key filename)))
 
 (defn list-user-files [req]
-  (let [user-auth-key nil]
-    (biz/list-user-files user-auth-key)))
+  (-> req
+      :headers
+      (get "x-user-auth-key")
+      biz/list-user-files
+      boilerplate))
 
 (defn delete-user-file [req]
-  (let [params (-> req :body slurp json/read-str)
-        user-auth-key (get params "auth_key" nil)
-        filename (get params "filename" nil)]
+  (let [user-auth-key (-> req :headers (get "x-user-auth-key"))
+        filename (-> req :headers (get "x-filename"))]
     (boilerplate (biz/delete-user-file user-auth-key filename))))
 
 (defroutes app-routes
