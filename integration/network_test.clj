@@ -110,6 +110,15 @@
     (println body)
     body))
 
+(defn- download-user-file [user-auth-key filename]
+  (let [url (str service-url "/users/files")
+        headers {"X-USER-AUTH-KEY" user-auth-key
+                 "X-FILENAME" filename}
+        response (curl/get url {:headers headers})
+        body (:body response)]
+    (println "# download file")
+    body))
+
 (defn- main []
   (let [email (str "c" (random-string 6) "@liberdade.bsb.br")
         password (random-string 12)]
@@ -129,10 +138,15 @@
                                            user-password)
                               (get "auth_key"))
             filename-local "./honey.png"
+            filename-cloud "honey.png"
             file-contents (slurp filename-local)
             _ (upload-user-file user-auth-key 
-                                "honey.png" 
+                                filename-cloud
                                 (io/file filename-local))
+            downloaded-contents (download-user-file user-auth-key 
+                                                    filename-cloud)
+            _ (println (str "are files equal? " 
+                            (= file-contents downloaded-contents)))
             _ (delete-app auth-key app-auth-key)
             _ (list-apps auth-key)]
         nil))

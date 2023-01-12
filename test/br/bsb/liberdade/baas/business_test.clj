@@ -307,16 +307,16 @@
     (db/run-migrations)
     (let [result (biz/new-client "owner@example.net" "password" false)
           client-auth-key (get result "auth_key" nil)
-	  result (biz/new-app client-auth-key "user account test app")
-	  app-auth-key (get result "auth_key" nil)
-	  user-email "coolguy@hotmail.com"
-	  user-password "cool guy yo"
-	  result (biz/new-user app-auth-key user-email user-password)
-	  user-auth-key (get result "auth_key" nil)
-	  first-error (get result "error" nil)
-	  result (biz/auth-user app-auth-key user-email user-password)
-	  user-auth-key-again (get result "auth_key" nil)
-	  second-error (get result "error" nil)]
+          result (biz/new-app client-auth-key "user account test app")
+          app-auth-key (get result "auth_key" nil)
+          user-email "coolguy@hotmail.com"
+          user-password "cool guy yo"
+          result (biz/new-user app-auth-key user-email user-password)
+          user-auth-key (get result "auth_key" nil)
+          first-error (get result "error" nil)
+          result (biz/auth-user app-auth-key user-email user-password)
+          user-auth-key-again (get result "auth_key" nil)
+          second-error (get result "error" nil)]
       (is (some? user-auth-key))
       (is (some? user-auth-key-again))
       (is (= user-auth-key user-auth-key-again))
@@ -328,18 +328,18 @@
     (db/run-migrations)
     (let [result (biz/new-client "owner@example.net" "password" false)
           client-auth-key (get result "auth_key" nil)
-	  result (biz/new-app client-auth-key "first test app")
-	  first-app-auth-key (get result "auth_key" nil)
+          result (biz/new-app client-auth-key "first test app")
+          first-app-auth-key (get result "auth_key" nil)
           result (biz/new-app client-auth-key "second test app")
-	  second-app-auth-key (get result "auth_key" nil)
-	  user-email "coolguy@hotmail.com"
-	  user-password "cool guy yo"
-	  result (biz/new-user first-app-auth-key user-email user-password)
-	  first-user-auth-key (get result "auth_key" nil)
-	  first-error (get result "error" nil)
-	  result (biz/new-user second-app-auth-key user-email user-password)
-	  second-user-auth-key (get result "auth_key" nil)
-	  second-error (get result "error" nil)]
+          second-app-auth-key (get result "auth_key" nil)
+          user-email "coolguy@hotmail.com"
+          user-password "cool guy yo"
+          result (biz/new-user first-app-auth-key user-email user-password)
+          first-user-auth-key (get result "auth_key" nil)
+          first-error (get result "error" nil)
+          result (biz/new-user second-app-auth-key user-email user-password)
+          second-user-auth-key (get result "auth_key" nil)
+          second-error (get result "error" nil)]
       (is (some? first-user-auth-key))
       (is (nil? first-error))
       (is (some? second-user-auth-key))
@@ -352,16 +352,16 @@
     (db/run-migrations)
     (let [result (biz/new-client "owner@example.net" "password" false)
           client-auth-key (get result "auth_key" nil)
-	  result (biz/new-app client-auth-key "first test app")
-	  app-auth-key (get result "auth_key" nil)
-	  user-email "coolguy@hotmail.com"
-	  user-password "cool guy yo"
-	  result (biz/new-user app-auth-key user-email user-password)
-	  first-user-auth-key (get result "auth_key" nil)
-	  first-error (get result "error" nil)
-	  result (biz/new-user app-auth-key user-email user-password)
-	  second-user-auth-key (get result "auth_key" nil)
-	  second-error (get result "error" nil)]
+          result (biz/new-app client-auth-key "first test app")
+          app-auth-key (get result "auth_key" nil)
+          user-email "coolguy@hotmail.com"
+          user-password "cool guy yo"
+          result (biz/new-user app-auth-key user-email user-password)
+          first-user-auth-key (get result "auth_key" nil)
+          first-error (get result "error" nil)
+          result (biz/new-user app-auth-key user-email user-password)
+          second-user-auth-key (get result "auth_key" nil)
+          second-error (get result "error" nil)]
       (is (some? first-user-auth-key))
       (is (nil? first-error))
       (is (nil? second-user-auth-key))
@@ -372,17 +372,17 @@
     (db/run-migrations)
     (let [result (biz/new-client "owner@example.net" "password" false)
           client-auth-key (get result "auth_key" nil)
-	  result (biz/new-app client-auth-key "first test app")
-	  app-auth-key (get result "auth_key" nil)
-	  user-email "coolguy@hotmail.com"
-	  user-password "cool guy yo"
-	  wrong-password "wrong password"
-	  result (biz/new-user app-auth-key user-email user-password)
-	  first-user-auth-key (get result "auth_key" nil)
-	  first-error (get result "error" nil)
-	  result (biz/auth-user app-auth-key user-email wrong-password)
-	  second-user-auth-key (get result "auth_key" nil)
-	  second-error (get result "error" nil)]
+    	  result (biz/new-app client-auth-key "first test app")
+	      app-auth-key (get result "auth_key" nil)
+    	  user-email "coolguy@hotmail.com"
+    	  user-password "cool guy yo"
+    	  wrong-password "wrong password"
+    	  result (biz/new-user app-auth-key user-email user-password)
+    	  first-user-auth-key (get result "auth_key" nil)
+    	  first-error (get result "error" nil)
+    	  result (biz/auth-user app-auth-key user-email wrong-password)
+    	  second-user-auth-key (get result "auth_key" nil)
+    	  second-error (get result "error" nil)]
       (is (some? first-user-auth-key))
       (is (nil? first-error))
       (is (nil? second-user-auth-key))
@@ -393,21 +393,21 @@
     (db/run-migrations)
     (let [result (biz/new-client "owner@example.net" "password" false)
           client-auth-key (get result "auth_key" nil)
-	  result (biz/new-app client-auth-key "first test app")
-	  app-auth-key (get result "auth_key" nil)
-	  user-email "coolguy@hotmail.com"
-	  user-password "cool guy yo"
-	  result (biz/new-user app-auth-key user-email user-password)
-	  first-user-auth-key (get result "auth_key" nil)
-	  first-error (get result "error" nil)
-	  result (biz/auth-user app-auth-key user-email user-password)
-	  second-user-auth-key (get result "auth_key" nil)
-	  second-error (get result "error" nil)
-	  result (biz/delete-user second-user-auth-key user-password)
-	  deletion-error (get result "error" nil)
-	  result (biz/auth-user app-auth-key user-email user-password)
-	  third-user-auth-key (get result "auth_key" nil)
-	  third-error (get result "error" nil)]
+     	  result (biz/new-app client-auth-key "first test app")
+    	  app-auth-key (get result "auth_key" nil)
+    	  user-email "coolguy@hotmail.com"
+    	  user-password "cool guy yo"
+    	  result (biz/new-user app-auth-key user-email user-password)
+    	  first-user-auth-key (get result "auth_key" nil)
+    	  first-error (get result "error" nil)
+    	  result (biz/auth-user app-auth-key user-email user-password)
+    	  second-user-auth-key (get result "auth_key" nil)
+    	  second-error (get result "error" nil)
+    	  result (biz/delete-user second-user-auth-key user-password)
+    	  deletion-error (get result "error" nil)
+    	  result (biz/auth-user app-auth-key user-email user-password)
+    	  third-user-auth-key (get result "auth_key" nil)
+    	  third-error (get result "error" nil)]
       (is (some? first-user-auth-key))
       (is (nil? first-error))
       (is (some? second-user-auth-key))
@@ -415,5 +415,37 @@
       (is (nil? third-user-auth-key))
       (is (some? third-error))
       (is (nil? deletion-error)))
+    (db/drop-database)))
+
+(deftest test-file-upload-and-download
+  (testing "test if it's possible to upload and download files"
+    (db/setup-database)
+    (db/run-migrations)
+    (let [result (biz/new-client "owner@example.net" "password" false)
+          client-auth-key (get result "auth_key" nil)
+          result (biz/new-app client-auth-key "file test app")
+          app-auth-key (get result "auth_key" nil)
+          result (biz/new-user app-auth-key "fud@nft.io" "pwd")
+          user-auth-key (get result "auth_key" nil)
+          filename "photo.jpg"
+          initial-contents (slurp "resources/pokemon.jpg")
+          result (biz/upload-user-file user-auth-key 
+                                       filename 
+                                       initial-contents)
+          upload-error (get result "error" nil)
+          initial-contents-again (biz/download-user-file user-auth-key 
+                                                         filename)
+          final-contents (slurp "resources/animal_crossing.jpg")
+          result (biz/upload-user-file user-auth-key
+                                       filename
+                                       final-contents)
+          update-error (get result "error" nil)
+          final-contents-again (biz/download-user-file user-auth-key
+                                                       filename)]
+      (is (nil? upload-error))
+      (is (= initial-contents initial-contents-again))
+      (is (nil? update-error))
+      (is (= final-contents final-contents-again))
+      (is (not= initial-contents-again final-contents-again)))
     (db/drop-database)))
 

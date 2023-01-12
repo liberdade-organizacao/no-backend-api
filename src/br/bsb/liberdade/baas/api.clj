@@ -116,8 +116,8 @@
     (boilerplate (biz/upload-user-file user-auth-key filename contents))))
 
 (defn download-user-file [req]
-  (let [user-auth-key nil
-        filename nil]
+  (let [user-auth-key (-> req :headers (get "x-user-auth-key"))
+        filename (-> req :headers (get "x-filename"))]
     (biz/download-user-file user-auth-key filename)))
 
 (defn list-user-files [req]

@@ -32,7 +32,7 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE TABLE IF NOT EXISTS files (
     id SERIAL PRIMARY KEY,
     filename VARCHAR(64) NOT NULL,
-    filepath VARCHAR(128) NOT NULL,
+    filepath VARCHAR(128) NOT NULL UNIQUE,
     contents BYTEA,
     file_size INT,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT current_timestamp,
