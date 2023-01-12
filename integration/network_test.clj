@@ -137,8 +137,8 @@
                                            user-email 
                                            user-password)
                               (get "auth_key"))
+            filename-cloud "player.png"
             filename-local "./honey.png"
-            filename-cloud "honey.png"
             file-contents (slurp filename-local)
             _ (upload-user-file user-auth-key 
                                 filename-cloud
@@ -147,7 +147,15 @@
                                                     filename-cloud)
             _ (println (str "are files equal? " 
                             (= file-contents downloaded-contents)))
-            ; TODO test if updating files works
+            _filename-local "./lilly.png"
+            file-contents (slurp filename-local)
+            _ (upload-user-file user-auth-key 
+                                filename-cloud
+                                (io/file filename-local))
+            downloaded-contents (download-user-file user-auth-key 
+                                                    filename-cloud)
+            _ (println (str "are files equal? " 
+                            (= file-contents downloaded-contents)))
             _ (delete-app auth-key app-auth-key)
             _ (list-apps auth-key)]
         nil))
