@@ -271,3 +271,32 @@
                nil
                "Failed to delete this file")}))
 
+(defn- maybe-list-app-files-xf [state]
+  (cond (some? (:error state)) 
+          state
+        (not (utils/in? possible-app-roles (:role state))) 
+	  (assoc state :error "Not enough permissions to do that")
+	:else 
+	  (let [app-id (:app-id state)
+	        user-id (:client-id state)
+		params {"app_id" app-id
+		        "user_id" user-id}
+		result (db/run-operation "list-app-files.sql" params)]
+	    (assoc state :files result))))
+
+(defn- format-list-app-files-output-xf [state]
+  {"error" (get state :error nil)
+   "files" (get state :files [])})
+
+(defn list-app-files [client-auth-key app-auth-key]
+  (let [client-info (utils/decode-secret client-auth-key)
+        app-info (utils/decode-secret app-auth-key)
+        client-id (:client_id client-info)
+	app-id (:app_id app-info)]
+    (-> {:error nil
+         :client-id client-id
+	 :app-id app-id}
+        get-client-role-in-app-xf
+	maybe-list-app-files-xf
+	format-list-app-files-output-xf)))
+

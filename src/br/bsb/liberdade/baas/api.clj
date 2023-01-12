@@ -130,6 +130,12 @@
         filename (-> req :headers (get "x-filename"))]
     (boilerplate (biz/delete-user-file user-auth-key filename))))
 
+(defn list-app-files [req]
+  (let [params (-> req :query-string url-search-params)
+        client-auth-key (get params "client_auth_key")
+	app-auth-key (get params "app_auth_key")]
+    (boilerplate (biz/list-app-files client-auth-key app-auth-key))))
+
 (defroutes app-routes
   (POST "/clients/signup" [] clients-signup)
   (POST "/clients/login" [] clients-login)
@@ -145,6 +151,7 @@
   (GET "/users/files" [] download-user-file)
   (GET "/users/files/list" [] list-user-files)
   (DELETE "/users/files" [] delete-user-file)
+  (GET "/apps/files/list" [] list-app-files)
   (GET "/health" [] check-health))
 
 ; ################
