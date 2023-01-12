@@ -1,7 +1,8 @@
 (ns br.bsb.liberdade.baas.utils
   (:require [buddy.sign.jwt :as jwt]
             [buddy.core.hash :as hash]
-            [buddy.core.codecs :as codecs]))
+            [buddy.core.codecs :as codecs])
+  (:import java.util.Base64))
 
 (def salt (-> (hash/md5 (or (System/getenv "SALT") "SALT")) (codecs/bytes->hex)))
 
@@ -16,6 +17,12 @@
 (defn hide [secret]
   (-> (hash/md5 (str secret salt))
       (codecs/bytes->hex)))
+
+(defn encode-data [data]
+  (.encodeToString (Base64/getEncoder) (.getBytes data)))
+
+(defn decode-data [data]
+  (String. (.decode (Base64/getDecoder) data)))
 
 (defn list-dir [dir]
   (let [directory (clojure.java.io/file dir)

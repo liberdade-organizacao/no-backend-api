@@ -223,12 +223,33 @@
     {"error" (when (= 0 (count result))
                "Failed to delete user")}))
 
+(defn- new-file-path [app-id user-id filename]
+  (str "a" app-id "/u" user-id "/" filename))
+
 (defn upload-user-file [user-auth-key filename contents]
-  (let [user-info (utils/decode-secret user-auth-key)]
-    {"error" "not implemented yet!"}))
+  (let [user-info (utils/decode-secret user-auth-key)
+        app-id (:app_id user-info)
+        user-id (:user_id user-info)
+        filepath (new-file-path app-id user-id filename)
+        params {"app_id" app-id
+                "user_id" user-id
+                "filename" filename
+                "filepath" filepath
+                "contents" (utils/encode-data contents)}
+        result (db/run-operation "upload-file.sql" params)]
+    {"error" (when (= 0 (count result)) "Failed to upload file")}))
 
 (defn download-user-file [user-auth-key filename]
-  "KO")
+  (let [user-info (utils/decode-secret user-auth-key)
+        app-id (:app_id user-info)
+        user-id (:user_id user-info)
+        filepath (new-file-path app-id user-id filename)
+        params {"filepath" filepath}
+        result (db/run-operation-first "download-file.sql" params)
+        contents (:contents result)]
+    (if (some? contents)
+      (utils/decode-data contents)
+      nil)))
 
 (defn list-user-files [user-auth-key]
   "KO")
