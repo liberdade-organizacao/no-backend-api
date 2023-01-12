@@ -462,6 +462,37 @@
       (is (nil? download-result)))
     (db/drop-database)))
 
-; TODO list files owned by a user
-; TODO delete user files
+(deftest list-and-delete-files
+  (testing "list and delete files"
+    (db/setup-database)
+    (db/run-migrations)
+    (let [result (biz/new-client "owner@example.net" "password" false)
+          client-auth-key (get result "auth_key" nil)
+          result (biz/new-app client-auth-key "file test app")
+          app-auth-key (get result "auth_key" nil)
+          result (biz/new-user app-auth-key "fud@nft.io" "pwd")
+          user-auth-key (get result "auth_key" nil)
+          contents (slurp "resources/pokemon.jpg")
+          result (biz/upload-user-file user-auth-key 
+                                       "pokemon.jpg"
+                                       contents)
+          first-upload-error (get result "error" nil)
+          contents (slurp "resources/animal_crossing.jpg")
+          result (biz/upload-user-file user-auth-key
+                                       "animal_crossing.jpg"
+                                       contents)
+          second-upload-error (get result "error" nil)
+          filenames-before (biz/list-user-files user-auth-key)
+          result (biz/delete-user-file user-auth-key "pokemon.jpg")
+          first-deletion-error (get result "error" nil)
+          filenames-after (biz/list-user-files user-auth-key)
+          result (biz/delete-user-file user-auth-key "pokemon.jpg")
+          second-deletion-error (get result "error" nil)]
+      (is (nil? first-upload-error))
+      (is (nil? second-upload-error))
+      (is (nil? first-deletion-error))
+      (is (some? second-deletion-error))
+      (is (= 2 (count filenames-before)))
+      (is (= 1 (count filenames-after))))
+    (db/drop-database)))
 

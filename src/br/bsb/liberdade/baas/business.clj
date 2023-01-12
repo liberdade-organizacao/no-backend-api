@@ -252,8 +252,22 @@
       nil)))
 
 (defn list-user-files [user-auth-key]
-  "KO")
+  (let [user-info (utils/decode-secret user-auth-key)
+        app-id (:app_id user-info)
+        user-id (:user_id user-info)
+        params {"app_id" app-id
+                "user_id" user-id}
+        result (db/run-operation "list-user-files.sql" params)]
+    result))
 
 (defn delete-user-file [user-auth-key filename]
-  {"error" "not implemented yet!"})
+  (let [user-info (utils/decode-secret user-auth-key)
+        app-id (:app_id user-info)
+        user-id (:user_id user-info)
+        filepath (new-file-path app-id user-id filename)
+        params {"filepath" filepath}
+        result (db/run-operation "delete-user-file.sql" params)]
+    {"error" (if (= 0 (count result))
+               nil
+               "Failed to delete this file")}))
 
