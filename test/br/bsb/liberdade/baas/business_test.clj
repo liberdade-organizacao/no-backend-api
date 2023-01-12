@@ -449,3 +449,7 @@
       (is (not= initial-contents-again final-contents-again)))
     (db/drop-database)))
 
+; TODO try to download inexistent files
+; TODO list files owned by a user
+; TODO delete user files
+
