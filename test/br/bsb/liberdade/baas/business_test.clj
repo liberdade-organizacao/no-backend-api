@@ -537,14 +537,16 @@
     (db/drop-database)))
 
 (def action-script-A "
-  function main()
-    print('hi')
+  function main(param)
+    print(\"hi\")
+    return param
   end
 ")
 
 (def action-script-B "
-  function main()
-    print('hello')
+  function main(param)
+    print(\"hello\")
+    return param
   end
 ")
 
