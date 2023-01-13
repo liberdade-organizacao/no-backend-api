@@ -536,3 +536,54 @@
       (is (= 0 (count thirdparty-files))))
     (db/drop-database)))
 
+(def action-script-A "
+  function main()
+    print('hi')
+  end
+")
+
+(def action-script-B "
+  function main()
+    print('hello')
+  end
+")
+
+(deftest actions
+  (testing "Clients can create, read, update, and delete actions, as well as listing actions from an app"
+    (db/setup-database)
+    (db/run-migrations)
+    (let [result (biz/new-client "voldemort@hogwarts.co.uk" "fsckharry" false)
+          client-auth-key (get result "auth_key" nil)
+          result (biz/new-app client-auth-key "test crud actions")
+          app-auth-key (get result "auth_key" nil)
+          action-name "new_action.sql"
+          result (biz/upsert-action client-auth-key 
+                                    app-auth-key
+                                    action-name
+                                    action-script-A)
+          creation-error (get result "error" nil)
+          first-gotten-script (biz/read-action client-auth-key
+                                               app-auth-key
+                                               action-name)
+          _ (biz/upsert-action client-auth-key
+                               app-auth-key
+                               action-name
+                               action-script-B)
+          second-gotten-script (biz/read-action client-auth-key
+                                                app-auth-key
+                                                action-name)       
+          action-list-before (biz/list-actions client-auth-key app-auth-key)
+          result (biz/delete-action client-auth-key
+                                    app-auth-key
+                                    action-name)
+          deletion-error (get result "error" nil)
+          action-list-after (biz/list-actions client-auth-key 
+                                              app-auth-key)] 
+      (is (nil? creation-error))
+      (is (= first-gotten-script action-script-A))
+      (is (= second-gotten-script action-script-B))
+      (is (= 1 (count action-list-before)))
+      (is (= 0 (count action-list-after)))
+      (is (nil? deletion-error)))
+    (db/drop-database)))
+

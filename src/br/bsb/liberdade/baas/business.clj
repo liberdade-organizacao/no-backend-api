@@ -300,3 +300,15 @@
 	maybe-list-app-files-xf
 	format-list-app-files-output-xf)))
 
+(defn upsert-action [client-auth-key app-auth-key action-name script]
+  {"error" "not implemented yet"})
+
+(defn read-action [client-auth-key app-auth-key action-name]
+  nil)
+
+(defn list-actions [client-auth-key app-auth-key]
+  [])
+
+(defn delete-action [client-auth-key app-auth-key action-name]
+  {"error" "not implemented yet"})
+
