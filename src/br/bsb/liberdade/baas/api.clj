@@ -104,7 +104,7 @@
 (defn delete-user [req]
   (let [params (-> req :body slurp json/read-str)
         user-auth-key (get params "user_auth_key" nil)
-   	    password (get params "password" nil)]
+   	password (get params "password" nil)]
     (boilerplate (biz/delete-user user-auth-key password))))
 
 (defn upload-user-file [req]
@@ -136,6 +136,39 @@
 	app-auth-key (get params "app_auth_key")]
     (boilerplate (biz/list-app-files client-auth-key app-auth-key))))
 
+(defn upload-action [req]
+  (let [params (-> req :body slurp json/read-str)
+        client-auth-key (get params "client_auth_key" nil)
+	app-auth-key (get params "app_auth_key" nil)
+	action-name (get params "action_name" nil)
+	action-script (get params "action_script" nil)]
+    (boilerplate (biz/upsert-action client-auth-key 
+                                    app-auth-key 
+				    action-name 
+				    action-script))))
+
+(defn download-action [req]
+  (let [params (-> req :query-string url-search-params)
+        client-auth-key (get params "client_auth_key" nil)
+	app-auth-key (get params "app_auth_key" nil)
+	action-name (get params "action_name" nil)]
+    (biz/read-action client-auth-key app-auth-key action-name)))
+
+(defn list-actions [req]
+  (let [params (-> req :query-string url-search-params)
+        client-auth-key (get params "client_auth_key" nil)
+	app-auth-key (get params "app_auth_key" nil)]
+    (biz/list-actions client-auth-key app-auth-key)))
+
+(defn delete-action [req]
+  (let [params (-> req :body slurp json/read-str)
+        client-auth-key (get params "client_auth_key" nil)
+	app-auth-key (get params "app_auth_key" nil)
+	action-name (get params "action_name" nil)]
+    (boilerplate (biz/delete-action client-auth-key 
+                                    app-auth-key 
+				    action-name))))
+
 (defroutes app-routes
   (POST "/clients/signup" [] clients-signup)
   (POST "/clients/login" [] clients-login)
@@ -152,6 +185,10 @@
   (GET "/users/files/list" [] list-user-files)
   (DELETE "/users/files" [] delete-user-file)
   (GET "/apps/files/list" [] list-app-files)
+  (POST "/actions" [] upload-action)
+  (GET "/actions" [] download-action)
+  (GET "/actions/list" [] list-actions)
+  (DELETE "/actions" [] delete-action)
   (GET "/health" [] check-health))
 
 ; ################
