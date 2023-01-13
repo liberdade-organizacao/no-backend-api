@@ -271,10 +271,13 @@
                nil
                "Failed to delete this file")}))
 
+(defn- is-role-invalid? [state]
+  (not (utils/in? possible-app-roles (:role state))))
+
 (defn- maybe-list-app-files-xf [state]
   (cond (some? (:error state)) 
           state
-        (not (utils/in? possible-app-roles (:role state))) 
+        (is-role-invalid? state) 
 	  (assoc state :error "Not enough permissions to do that")
 	:else 
 	  (let [app-id (:app-id state)
@@ -300,15 +303,97 @@
 	maybe-list-app-files-xf
 	format-list-app-files-output-xf)))
 
+(defn- maybe-upload-action-xf [state]
+  (cond 
+    (some? (:error state)) 
+      state
+    (is-role-invalid? state)
+      (assoc state :error "Not enough permissions")
+    :else
+      (let [app-id (:app-id state)
+            action-name (:action-name state)
+	    script (:script state)
+	    params {"app_id" app-id
+	            "name" action-name
+		    "script" script}
+	    result (db/run-operation "upload-action.sql" params)]
+        (assoc state :error (when (= 0 (count result)) "Failed to upload script")))))
+
+(defn- format-standard-xf [state]
+  {"error" (get state :error nil)})
+
 (defn upsert-action [client-auth-key app-auth-key action-name script]
-  {"error" "not implemented yet"})
+  (let [client-id (-> client-auth-key utils/decode-secret :client_id)
+	app-id (-> app-auth-key utils/decode-secret :app_id)]
+    (-> {:client-id client-id
+         :app-id app-id
+	 :action-name action-name
+	 :script script
+	 :error nil}
+        get-client-role-in-app-xf
+	maybe-upload-action-xf
+	format-standard-xf)))
+
+(defn- maybe-download-action-xf [state]
+  (if (or (-> state :error some?) (is-role-invalid? state))
+    {"error" "failed to download action"}
+    (let [app-id (:app-id state)
+          action-name (:action-name state)
+	  params {"app_id" app-id
+	          "name" action-name}
+	  result (db/run-operation-first "download-action.sql" params)]
+      (:script result))))
 
 (defn read-action [client-auth-key app-auth-key action-name]
-  nil)
+  (let [client-id (-> client-auth-key utils/decode-secret :client_id)
+        app-id (-> app-auth-key utils/decode-secret :app_id)]
+    (-> {:client-id client-id
+         :app-id app-id
+	 :action-name action-name
+	 :error nil}
+        get-client-role-in-app-xf
+	maybe-download-action-xf)))
+
+(defn- maybe-list-actions-xf [state]
+  (if (or (-> state :error some?) (is-role-invalid? state))
+    {"error" "failed to download action"}
+    (let [app-id (:app-id state)
+	  params {"app_id" app-id}
+	  result (db/run-operation "list-actions.sql" params)]
+      result)))
 
 (defn list-actions [client-auth-key app-auth-key]
-  [])
+  (let [client-id (-> client-auth-key utils/decode-secret :client_id)
+        app-id (-> app-auth-key utils/decode-secret :app_id)]
+    (-> {:client-id client-id
+         :app-id app-id
+	 :error nil}
+        get-client-role-in-app-xf
+	maybe-list-actions-xf)))
+
+(defn- maybe-delete-action-xf [state]
+  (cond 
+    (some? (:error state)) 
+      state
+    (is-role-invalid? state)
+      (assoc state :error "Not enough permissions")
+    :else
+      (let [app-id (:app-id state)
+            action-name (:action-name state)
+	    script (:script state)
+	    params {"app_id" app-id
+	            "name" action-name}
+	    result (db/run-operation "delete-action.sql" params)]
+        (assoc state :error (when (= 0 (count result)) "Failed to upload script")))))
 
 (defn delete-action [client-auth-key app-auth-key action-name]
-  {"error" "not implemented yet"})
+  (let [client-id (-> client-auth-key utils/decode-secret :client_id)
+	app-id (-> app-auth-key utils/decode-secret :app_id)]
+    (-> {:client-id client-id
+         :app-id app-id
+	 :action-name action-name
+	 :error nil}
+        get-client-role-in-app-xf
+	maybe-delete-action-xf
+	format-standard-xf)))
 
