@@ -150,14 +150,14 @@
     (println body)
     body))
 
-(defn run-action [client-auth-key app-auth-key action-name action-param]
+(defn run-action [user-auth-key app-auth-key action-name action-param]
   (let [url (str service-url "/actions/run")
-        params {"client_auth_key" client-auth-key
-	        "app_auth_key" app-auth-key
-		"action_name" action-name
-		"action_param" action-param}
-	response (curl/post url {:body (json/generate-string params)})
-	body (-> response (get :body) json/parse-string)]
+        params {"user_auth_key" user-auth-key
+                "app_auth_key" app-auth-key
+                "action_name" action-name
+                "action_param" action-param}
+        response (curl/post url {:body (json/generate-string params)})
+        body (-> response (get :body) json/parse-string)]
     (println "# run action")
     (println body)
     body))
@@ -199,13 +199,19 @@
                                                     filename-cloud)
             _ (println (str "are files equal? " 
                             (= file-contents downloaded-contents)))
-	    _ (list-user-files user-auth-key)
-	    _ (delete-user-file user-auth-key filename-cloud)
-	    _ (list-user-files user-auth-key)
-	    action-name "ingegration_test.lua"
-	    action-contents (slurp "./integration_test.lua")
-	    _ (upload-action auth-key app-auth-key action-name action-contents)
-	    _ (run-action auth-key app-auth-key action-name "Marceline")
+            _ (list-user-files user-auth-key)
+            _ (delete-user-file user-auth-key filename-cloud)
+            _ (list-user-files user-auth-key)
+            action-name "integration_test.lua"
+            action-contents (slurp "./integration_test.lua")
+            _ (upload-action auth-key 
+                             app-auth-key 
+                             action-name 
+                             action-contents)
+            _ (run-action user-auth-key 
+                          app-auth-key 
+                          action-name 
+                          "Marceline")
             _ (delete-app auth-key app-auth-key)
             _ (list-apps auth-key)]
         nil))
