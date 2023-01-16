@@ -9,7 +9,8 @@
             [jumblerg.middleware.cors :refer [wrap-cors]]
             [selmer.parser :refer :all]
             [br.bsb.liberdade.baas.db :as db]
-            [br.bsb.liberdade.baas.business :as biz]))
+            [br.bsb.liberdade.baas.business :as biz]
+	    [br.bsb.liberdade.baas.proxies :as proxies]))
 
 ; #############
 ; # UTILITIES #
@@ -169,6 +170,17 @@
                                     app-auth-key 
 				    action-name))))
 
+(defn run-action [req]
+  (let [params (-> req :body slurp json/read-str)
+        client-auth-key (get params "client_auth_key" nil)
+	app-auth-key (get params "app_auth_key" nil)
+	action-name (get params "action_name" nil)
+	action-param (get params "action_param" nil)]
+    (boilerplate (proxies/run-action client-auth-key 
+                                     app-auth-key
+				     action-name
+				     action-param))))
+
 (defroutes app-routes
   (POST "/clients/signup" [] clients-signup)
   (POST "/clients/login" [] clients-login)
@@ -189,6 +201,7 @@
   (GET "/actions" [] download-action)
   (GET "/actions/list" [] list-actions)
   (DELETE "/actions" [] delete-action)
+  (POST "/actions/run" run-action)
   (GET "/health" [] check-health))
 
 ; ################
