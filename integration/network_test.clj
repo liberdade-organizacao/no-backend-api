@@ -138,6 +138,30 @@
     (println body)
     body))
 
+(defn upload-action [client-auth-key app-auth-key action-name action-contents]
+  (let [url (str service-url "/actions")
+        params {"client_auth_key" client-auth-key
+	        "app_auth_key" app-auth-key
+		"action_name" action-name
+		"action_script" action-contents}
+	response (curl/post url {:body (json/generate-string params)})
+	body (json/parse-string (get response :body))]
+    (println "# upload action")
+    (println body)
+    body))
+
+(defn run-action [client-auth-key app-auth-key action-name action-param]
+  (let [url (str service-url "/actions/run")
+        params {"client_auth_key" client-auth-key
+	        "app_auth_key" app-auth-key
+		"action_name" action-name
+		"action_param" action-param}
+	response (curl/post url {:body (json/generate-string params)})
+	body (-> response (get :body) json/parse-string)]
+    (println "# run action")
+    (println body)
+    body))
+
 (defn- main []
   (let [email (str "c" (random-string 6) "@liberdade.bsb.br")
         password (random-string 12)]
@@ -166,7 +190,7 @@
                                                     filename-cloud)
             _ (println (str "are files equal? " 
                             (= file-contents downloaded-contents)))
-            _filename-local "./lilly.png"
+            filename-local "./lilly.png"
             file-contents (slurp filename-local)
             _ (upload-user-file user-auth-key 
                                 filename-cloud
@@ -178,6 +202,10 @@
 	    _ (list-user-files user-auth-key)
 	    _ (delete-user-file user-auth-key filename-cloud)
 	    _ (list-user-files user-auth-key)
+	    action-name "ingegration_test.lua"
+	    action-contents (slurp "./integration_test.lua")
+	    _ (upload-action auth-key app-auth-key action-name action-contents)
+	    _ (run-action auth-key app-auth-key action-name "Marceline")
             _ (delete-app auth-key app-auth-key)
             _ (list-apps auth-key)]
         nil))

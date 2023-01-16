@@ -13,7 +13,8 @@
                  [org.clojars.liberdade/strint "0.0.1"]
                  [jumblerg/ring-cors "2.0.0"]
                  [com.github.seancorfield/next.jdbc "1.2.753"]
-                 [org.postgresql/postgresql "42.2.10"]]
+                 [org.postgresql/postgresql "42.2.10"]
+		 [clj-http "3.12.3"]]
   :min-lein-version "2.9.8"
   :main ^:skip-aot br.bsb.liberdade.baas.api
   :target-path "target/%s"
