@@ -180,6 +180,7 @@
                                            user-email 
                                            user-password)
                               (get "auth_key"))
+            ; test if files can be uploaded and downloaded correctly
             filename-cloud "player.png"
             filename-local "./honey.png"
             file-contents (slurp filename-local)
@@ -202,6 +203,7 @@
             _ (list-user-files user-auth-key)
             _ (delete-user-file user-auth-key filename-cloud)
             _ (list-user-files user-auth-key)
+	    ; test if actions can be correctly proxied
             action-name "integration_test.lua"
             action-contents (slurp "./integration_test.lua")
             _ (upload-action auth-key 
@@ -212,6 +214,41 @@
                           app-auth-key 
                           action-name 
                           "Marceline")
+            ; uploading file through action
+	    action-name "upload-file.lua"
+	    action-contents (slurp "./upload-file.lua")
+	    filename "crush_name.txt"
+	    contents "Princess Bubblegum"
+	    _ (upload-action auth-key
+	                     app-auth-key
+			     action-name
+			     action-contents)
+	    _ (run-action user-auth-key 
+	                  app-auth-key 
+			  action-name 
+			  (str "filename=" filename "&contents=" contents))
+	    download-contents (download-user-file user-auth-key filename)
+	    _ (println download-contents)
+	    ; downloading file through action
+            action-name "download-file.lua"
+	    action-contents (slurp "./download-file.lua")
+	    filename "core-driver.txt"
+            contents "BMO means 'be more'"
+            _ (upload-user-file user-auth-key 
+                                filename
+                                contents)
+	    _ (upload-action auth-key
+	                     app-auth-key
+			     action-name
+			     action-contents)
+	    response (run-action user-auth-key 
+	                         app-auth-key 
+                                 action-name
+				 (str "filename=" filename))
+	    downloaded-contents (get response "result" nil)
+	    _ (println (str "are downloaded contents equal? " (= contents downloaded-contents)))
+
+	    ; strip down
             _ (delete-app auth-key app-auth-key)
             _ (list-apps auth-key)]
         nil))
