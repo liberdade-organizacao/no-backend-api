@@ -3,7 +3,7 @@
             [clj-http.client :as client]
             [br.bsb.liberdade.baas.utils :as utils]))
 
-(def scripting-engine-url (or (System/getenv "SCRIPTING_ENGINE_URL") "http://localhost:8080"))
+(def scripting-engine-url (or (System/getenv "SCRIPTING_ENGINE_URL") "http://localhost:7781"))
 
 (defn run-action [user-auth-key app-auth-key action-name action-param]
   (let [user-info (utils/decode-secret user-auth-key)
