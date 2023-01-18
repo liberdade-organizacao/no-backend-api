@@ -420,33 +420,55 @@
   {"error"         (get state :error nil)
    (:things state) (get state (:things state) nil)})
 
-(defn list-all-clients [client-auth-key]
+(defn- list-all-things [client-auth-key things]
   (->> {:error nil
-        :client_id (-> client-auth-key 
-                       utils/decode-secret
-                       :client_id)
-        :things "clients"}
+        :client_id (-> client-auth-key
+	               utils/decode-secret
+		       :client_id)
+        :things things}
        is-client-admin-xf
        maybe-list-all-things-xf
        format-list-all-things-output-xf))
+
+(defn list-all-clients [client-auth-key]
+  (list-all-things client-auth-key "clients"))
 
 (defn list-all-apps [client-auth-key]
-  (->> {:error nil
-        :client_id (-> client-auth-key 
-                       utils/decode-secret
-                       :client_id)
-        :things "apps"}
-       is-client-admin-xf
-       maybe-list-all-things-xf
-       format-list-all-things-output-xf))
+  (list-all-things client-auth-key "apps"))
 
 (defn list-all-files [client-auth-key]
-  (->> {:error nil
-        :client_id (-> client-auth-key 
-                       utils/decode-secret
-                      :client_id)
-        :things "files"}
-       is-client-admin-xf
-       maybe-list-all-things-xf
-       format-list-all-things-output-xf))
+  (list-all-things client-auth-key "files"))
+
+(defn list-all-admins [client-auth-key]
+  (list-all-things client-auth-key "admins"))
+
+(defn- maybe-promote-to-admin-xf [state]
+  (if (-> state :is_admin false?)
+    (assoc state :error "Not enough permissions")
+    (let [params {"email" (get state :email nil)}
+          response (db/run-operation-first "promote-to-admin.sql" params)]
+      state)))
+
+(defn- maybe-demote-admin-xf [state]
+  (if (-> state :is_admin false?)
+    (assoc state :error "Not enough permissions")
+    (let [params {"email" (get state :email nil)}
+          response (db/run-operation-first "demote-admin.sql" params)]
+      state)))
+
+(defn promote-to-admin [client-auth-key email-to-promote]
+  (-> {:error nil
+       :email email-to-promote
+       :client_id (-> client-auth-key utils/decode-secret :client_id)}
+      is-client-admin-xf
+      maybe-promote-to-admin-xf
+      format-standard-xf))
+
+(defn demote-admin [client-auth-key email-to-demote]
+  (-> {:error nil
+       :email email-to-demote
+       :client_id (-> client-auth-key utils/decode-secret :client_id)}
+      is-client-admin-xf
+      maybe-demote-admin-xf
+      format-standard-xf))
 
