@@ -397,3 +397,33 @@
 	maybe-delete-action-xf
 	format-standard-xf)))
 
+(defn- is-client-admin-xf [state]
+  (if (some? (:error state))
+    state
+    (let [params {"client_id" (:client_id state)}
+          result (db/run-operation-first "is-client-admin.sql" params)]
+      (merge state result))))
+
+(defn- maybe-list-all-clients-xf [state]
+  (cond 
+    (-> state :error some?)
+      state
+    (-> state :is_admin false?)
+      (assoc state :error "Not enough permissions")
+    :else
+      (let [result (db/run-operation "list-all-clients.sql" {})]
+        (assoc state :clients result))))
+
+(defn- format-list-all-clients-output-xf [state]
+  {"error" (get state :error nil)
+   "clients" (get state :clients nil)})
+
+(defn list-all-clients [client-auth-key]
+  (->> {:error nil
+        :client_id (-> client-auth-key 
+                       utils/decode-secret
+                       :client_id)}
+       is-client-admin-xf
+       maybe-list-all-clients-xf
+       format-list-all-clients-output-xf))
+
