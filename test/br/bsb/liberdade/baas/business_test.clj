@@ -589,3 +589,27 @@
       (is (nil? deletion-error)))
     (db/drop-database)))
 
+(deftest admin-test
+  (testing "Only admins can list all of a thing"
+    (db/setup-database)
+    (db/run-migrations)
+    (let [result (biz/new-client "admin@liberdade.bsb.br" "senha" true)
+          admin-auth-key (get result "auth_key" nil)
+          result (biz/list-all-clients admin-auth-key)
+          all-clients (get result "clients" nil)
+          error (get result "error" nil)]
+      (is (some? all-clients))
+      (is (nil? error)))
+    (db/drop-database))
+  (testing "Regular users can't lists all of a thing"
+    (db/setup-database)
+    (db/run-migrations)
+    (let [result (biz/new-client "regular@hotmail.com" "pwd" false)
+          client-auth-key (get result "auth_key" nil)
+          result (biz/list-all-clients client-auth-key)
+          all-clients (get result "clients" nil)
+          error (get result "error" nil)]
+      (is (nil? all-clients))
+      (is (some? error)))
+    (db/drop-database)))
+
