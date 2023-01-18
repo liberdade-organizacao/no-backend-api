@@ -181,12 +181,21 @@
                                      action-name
                                      action-param))))
 
-(defn list-all-clients [req]
+(defn list-all-things [req f]
   (-> req
       :headers
       (get "x-client-auth-key")
-      biz/list-all-clients
+      f
       boilerplate))
+
+(defn list-all-clients [req]
+  (list-all-things req biz/list-all-clients))
+
+(defn list-all-apps [req]
+  (list-all-things req biz/list-all-apps))
+
+(defn list-all-files [req]
+  (list-all-things req biz/list-all-files))
 
 (defroutes app-routes
   (POST "/clients/signup" [] clients-signup)
@@ -210,6 +219,8 @@
   (DELETE "/actions" [] delete-action)
   (POST "/actions/run" [] run-action)
   (GET "/clients/all" [] list-all-clients)
+  (GET "/apps/all" [] list-all-apps)
+  (GET "/files/all" [] list-all-files)
   (GET "/health" [] check-health))
 
 ; ################
