@@ -609,8 +609,7 @@
       (is (some? all-apps))
       (is (nil? apps-error))
       (is (some? all-files))
-      (is (nil? files-error))
-      )
+      (is (nil? files-error)))
     (db/drop-database))
   (testing "Regular users can't lists all of a thing"
     (db/setup-database)
