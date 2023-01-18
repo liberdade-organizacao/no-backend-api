@@ -603,13 +603,18 @@
           apps-error (get result "error" nil)
           result (biz/list-all-files admin-auth-key)
           all-files (get result "files" nil)
-          files-error (get result "error" nil)]
+          files-error (get result "error" nil)
+	  result (biz/list-all-admins admin-auth-key)
+	  all-admins (get result "admins" nil)
+	  admins-error (get result "error" nil)]
       (is (some? all-clients))
       (is (nil? clients-error))
       (is (some? all-apps))
       (is (nil? apps-error))
       (is (some? all-files))
-      (is (nil? files-error)))
+      (is (nil? files-error))
+      (is (some? all-admins))
+      (is (nil? admins-error)))
     (db/drop-database))
   (testing "Regular users can't lists all of a thing"
     (db/setup-database)
@@ -624,12 +629,44 @@
           apps-error (get result "error" nil)
           result (biz/list-all-files client-auth-key)
           all-files (get result "files" nil)
-          files-error (get result "error" nil)]
+          files-error (get result "error" nil)
+	  result (biz/list-all-admins client-auth-key)
+	  all-admins (get result "admins" nil)
+	  admins-error (get result "error" nil)]
       (is (nil? all-clients))
       (is (some? clients-error))
       (is (nil? all-apps))
       (is (some? apps-error))
       (is (nil? all-files))
-      (is (some? files-error)))
+      (is (some? files-error))
+      (is (nil? all-admins))
+      (is (some? admins-error)))
+    (db/drop-database)))
+
+(deftest promote-and-demote-admins
+  (testing "only admins can promote and demote admins"
+    (db/setup-database)
+    (db/run-migrations)
+    (let [admin-email "admin@liberdade.bsb.br"
+          result (biz/new-client admin-email "senha" true)
+          admin-auth-key (get result "auth_key" nil)
+	  user-email "regular@hotmail.com"
+	  result (biz/new-client user-email "password" false)
+	  user-auth-key (get result "auth_key" nil)
+	  result (biz/promote-to-admin user-auth-key admin-email)
+	  user-promotion-error (get result "error" nil)
+	  result (biz/demote-admin user-auth-key admin-email)
+	  user-demotion-error (get result "error" nil)
+	  result (biz/promote-to-admin admin-auth-key user-email)
+	  admin-promotion-error (get result "error" nil)
+	  result (biz/demote-admin user-auth-key admin-email)
+	  admin-demotion-error (get result "error" nil)
+	  result (biz/demote-admin admin-auth-key user-auth-key)
+	  get-pwned (get result "error" nil)]
+      (is (some? user-promotion-error))
+      (is (some? user-demotion-error))
+      (is (nil? admin-promotion-error))
+      (is (nil? admin-demotion-error))
+      (is (some? get-pwned)))
     (db/drop-database)))
 

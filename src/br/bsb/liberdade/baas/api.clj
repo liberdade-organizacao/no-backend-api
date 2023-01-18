@@ -181,7 +181,7 @@
                                      action-name
                                      action-param))))
 
-(defn list-all-things [req f]
+(defn- list-all-things [req f]
   (-> req
       :headers
       (get "x-client-auth-key")
@@ -196,6 +196,21 @@
 
 (defn list-all-files [req]
   (list-all-things req biz/list-all-files))
+
+(defn list-all-admins [req]
+  (list-all-things req biz/list-all-admins))
+
+(defn promote-to-admin [req]
+  (let [params (-> req :body slurp json/read-str)
+        auth-key (get params "auth_key" nil)
+        email (get params "email" nil)]
+    (boilerplate (biz/promote-to-admin client-auth-key email))))
+
+(defn demote-admin [req]
+  (let [params (-> req :body slurp json/read-str)
+        auth-key (get params "auth_key" nil)
+	email (get params "email" nil)]
+    (boilerplate (biz/demote-to-admin client-auth-key email))))
 
 (defroutes app-routes
   (POST "/clients/signup" [] clients-signup)
@@ -221,6 +236,9 @@
   (GET "/clients/all" [] list-all-clients)
   (GET "/apps/all" [] list-all-apps)
   (GET "/files/all" [] list-all-files)
+  (GET "/admins/all" [] list-all-admins)
+  (POST "/admins" [] promote-to-admin)
+  (DELETE "/admins" [] demote-admin)
   (GET "/health" [] check-health))
 
 ; ################
