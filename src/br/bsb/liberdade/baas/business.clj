@@ -427,3 +427,49 @@
        maybe-list-all-clients-xf
        format-list-all-clients-output-xf))
 
+(defn- maybe-list-all-apps-xf [state]
+  (cond 
+    (-> state :error some?)
+      state
+    (-> state :is_admin false?)
+      (assoc state :error "Not enough permissions")
+    :else
+      (let [result (db/run-operation "list-all-apps.sql" {})]
+        (assoc state :apps result))))
+
+(defn- format-list-all-apps-output-xf [state]
+  {"error" (get state :error nil)
+   "apps" (get state :apps nil)})
+
+(defn list-all-apps [client-auth-key]
+  (->> {:error nil
+        :client_id (-> client-auth-key 
+                       utils/decode-secret
+                       :client_id)}
+       is-client-admin-xf
+       maybe-list-all-apps-xf
+       format-list-all-apps-output-xf))
+
+(defn- maybe-list-all-files-xf [state]
+  (cond 
+    (-> state :error some?)
+      state
+    (-> state :is_admin false?)
+      (assoc state :error "Not enough permissions")
+    :else
+      (let [result (db/run-operation "list-all-files.sql" {})]
+        (assoc state :files result))))
+
+(defn- format-list-all-files-output-xf [state]
+  {"error" (get state :error nil)
+   "files" (get state :files nil)})
+
+(defn list-all-files [client-auth-key]
+  (->> {:error nil
+        :client_id (-> client-auth-key 
+                       utils/decode-secret
+                       :client_id)}
+       is-client-admin-xf
+       maybe-list-all-files-xf
+       format-list-all-files-output-xf))
+

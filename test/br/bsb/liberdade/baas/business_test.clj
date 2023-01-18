@@ -597,9 +597,20 @@
           admin-auth-key (get result "auth_key" nil)
           result (biz/list-all-clients admin-auth-key)
           all-clients (get result "clients" nil)
-          error (get result "error" nil)]
+          clients-error (get result "error" nil)
+          result (biz/list-all-apps admin-auth-key)
+          all-apps (get result "apps" nil)
+          apps-error (get result "error" nil)
+          result (biz/list-all-files admin-auth-key)
+          all-files (get result "files" nil)
+          files-error (get result "error" nil)]
       (is (some? all-clients))
-      (is (nil? error)))
+      (is (nil? clients-error))
+      (is (some? all-apps))
+      (is (nil? apps-error))
+      (is (some? all-files))
+      (is (nil? files-error))
+      )
     (db/drop-database))
   (testing "Regular users can't lists all of a thing"
     (db/setup-database)
@@ -608,8 +619,18 @@
           client-auth-key (get result "auth_key" nil)
           result (biz/list-all-clients client-auth-key)
           all-clients (get result "clients" nil)
-          error (get result "error" nil)]
+          clients-error (get result "error" nil)
+          result (biz/list-all-apps client-auth-key)
+          all-apps (get result "apps" nil)
+          apps-error (get result "error" nil)
+          result (biz/list-all-files client-auth-key)
+          all-files (get result "files" nil)
+          files-error (get result "error" nil)]
       (is (nil? all-clients))
-      (is (some? error)))
+      (is (some? clients-error))
+      (is (nil? all-apps))
+      (is (some? apps-error))
+      (is (nil? all-files))
+      (is (some? files-error)))
     (db/drop-database)))
 
