@@ -223,6 +223,20 @@
     {"error" (when (= 0 (count result))
                "Failed to delete user")}))
 
+(defn update-user-password [user-auth-key old-password new-password]
+  (let [user-info (utils/decode-secret user-auth-key)
+        user-id (:user_id user-info)
+	app-id (:app_id user-info)
+	params {"user_id" user-id
+	        "app_id" app-id
+		"old_password" (utils/hide old-password)
+		"new_password" (utils/hide new-password)}
+        result (db/run-operation "change-user-password.sql" params)]
+    (println result)
+    {"error" (if (-> result count pos?)
+               nil
+	       "Failed to change password")}))
+
 (defn- new-file-path [app-id user-id filename]
   (str "a" app-id "/u" user-id "/" filename))
 

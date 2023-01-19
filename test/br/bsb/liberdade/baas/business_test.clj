@@ -344,6 +344,25 @@
       (is (nil? first-error))
       (is (some? second-user-auth-key))
       (is (nil? second-error)))
+    (db/drop-database))
+  (testing "users can change their password"
+    (db/setup-database)
+    (db/run-migrations)
+    (let [result (biz/new-client "owner@liberdade.bsb.br" "passwordy" false)
+          client-auth-key (get result "auth_key" nil)
+	  result (biz/new-app client-auth-key "change user password  app")
+	  app-auth-key (get result "auth_key" nil)
+	  user-email "user@liberdade.bsb.br"
+	  old-password "passwordsAREnice"
+	  new-password "but passphrases are better"
+	  result (biz/new-user app-auth-key user-email old-password)
+	  user-auth-key (get result "auth_key" nil)
+	  result (biz/update-user-password user-auth-key old-password new-password)
+	  error (get result "error" nil)
+	  result (biz/auth-user app-auth-key user-email new-password)
+	  user-auth-key-again (get result "auth_key" nil)]
+      (is (nil? error))
+      (is (= user-auth-key user-auth-key-again)))
     (db/drop-database)))
 
 (deftest user-accounts--error-handling

@@ -108,6 +108,13 @@
    	password (get params "password" nil)]
     (boilerplate (biz/delete-user user-auth-key password))))
 
+(defn update-user-password [req]
+  (let [params (-> req :body slurp body/read-str)
+	user-auth-key (get params "user_auth_key" nil)
+	old-password (get params "old_password" nil)
+	new-password (get params "get_password" nil)]
+    (boilerplate (biz/update-user-password user-auth-key old-password new-password))))
+
 (defn upload-user-file [req]
   (let [user-auth-key (-> req :headers (get "x-user-auth-key"))
         filename (-> req :headers (get "x-filename"))
@@ -224,6 +231,7 @@
   (POST "/users/signup" [] users-signup)
   (POST "/users/login" [] users-login)
   (DELETE "/users" [] delete-user)
+  (POST "/users/password" [] update-user-password)
   (POST "/users/files" [] upload-user-file)
   (GET "/users/files" [] download-user-file)
   (GET "/users/files/list" [] list-user-files)
