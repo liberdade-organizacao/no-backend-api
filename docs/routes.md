@@ -5,15 +5,26 @@ Fundamental entities:
   - The people that are going to use the no-backend server directly
   - For each app, clients can either be "admins" or "contributors"
 - Apps
+  - An app has access to its own clients to manage, users, files, and actions
 - Users
   - The people that are going to use the apps hosted in this service
 - Files
+  - Each user has access to a small file storage within an app
+  - Each file is identified by an unique path that contains the app's id,
+    the ussr's id, and the file name
 - Actions
   - Scripts that let clients implement custom features for their apps
   - Actions are written in a subset of Lua and required the 
     [scripting engine](https://github.com/liberdade-organizacao/no-backend-scripting-engine)
     to be executed
+  - Actions' Lua scripts should contain a `main` function that receive a
+    string and return another string. For example:
 
+```
+function main(name)
+ return "hello " .. name .. "!"
+end
+```
 
 # Routes API
 
@@ -177,37 +188,55 @@ Fundamental entities:
 
 ## `POST /actions`
 
-<-- TODO come back from here -->
-- Let clients create actions
+- Let clients upload actions
+  - Note that uploading actions with the same name will override the previous ones!
 - Parameters:
-  - 
+  - `client_auth_key`: client's auth key
+  - `app_auth_key`: app's auth key
+  - `action_name`: action name (preferably the Lua script file name)
+  - `action_content`: Lua script
 - Returns:
+  - `error`: `null` or an appropriate error message
 
 ## `GET /actions`
-- Description
+
+- Let clients download actions
 - Parameters:
+  - `client_auth_key`: client auth key
+  - `app_auth_key`: app auth key
+  - `action_name`: action name
 - Returns:
-
-
+  - `script`: action's contents
 
 ## `GET /actions/list`
-- Description
+
+- Let clients list all actions within an app
 - Parameters:
+  - `client_auth_key`: client auth key
+  - `app_auth_key`: app auth key
 - Returns:
-
-
+  - `actions`: list of action names
+  - `error`: `null` or appropriate error message
 
 ## `DELETE /actions`
-- Description
+
+- Let clients delete an action
 - Parameters:
+  - `client_auth_key`: client auth key
+  - `app_auth_key`: app auth key
+  - `action_name`: action name
 - Returns:
-
-
+  - `error`: `null` or appropriate error message
 
 ## `POST /actions/run`
-- Description
+
+- Let clients run actions
 - Parameters:
+  - `client_auth_key`: client auth key
+  - `app_auth_key`: app auth key
+  - `action_name`: action name
+  - `action_param`: input string for the action
 - Returns:
-
-
+  - `error`: `null` or appropriate error message
+  - `result`: output string from the action
 
