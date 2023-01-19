@@ -47,5 +47,5 @@ export_database:
 
 .PHONY: import_database
 import_database:
-	psql -h localhost -p 5434 -d baas -U liberdade -W  backup.sql
+	psql -h localhost -p 5434 -d baas -U liberdade -W < backup.sql
 
