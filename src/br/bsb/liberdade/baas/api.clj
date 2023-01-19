@@ -223,6 +223,7 @@
   (DELETE "/clients" [] delete-client)
   (POST "/users/signup" [] users-signup)
   (POST "/users/login" [] users-login)
+  (DELETE "/users" [] delete-user)
   (POST "/users/files" [] upload-user-file)
   (GET "/users/files" [] download-user-file)
   (GET "/users/files/list" [] list-user-files)
