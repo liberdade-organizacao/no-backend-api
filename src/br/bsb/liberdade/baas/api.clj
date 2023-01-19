@@ -204,13 +204,13 @@
   (let [params (-> req :body slurp json/read-str)
         auth-key (get params "auth_key" nil)
         email (get params "email" nil)]
-    (boilerplate (biz/promote-to-admin client-auth-key email))))
+    (boilerplate (biz/promote-to-admin auth-key email))))
 
 (defn demote-admin [req]
   (let [params (-> req :body slurp json/read-str)
         auth-key (get params "auth_key" nil)
-	email (get params "email" nil)]
-    (boilerplate (biz/demote-to-admin client-auth-key email))))
+	      email (get params "email" nil)]
+    (boilerplate (biz/demote-admin auth-key email))))
 
 (defroutes app-routes
   (POST "/clients/signup" [] clients-signup)
