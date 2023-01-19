@@ -15,7 +15,9 @@ test:
 integration-test:
 	lein run migrate-up
 	lein run up &
-	bb integration/network_test.clj
+	cd integration
+	bb network_test.clj
+	cd ..
 	# fuser -k $(PORT)/tcp
 	lsof -i tcp:$(PORT) | grep -v PID | awk '{print $$2}' | xargs kill
 
@@ -38,3 +40,12 @@ migrate_up:
 .PHONY: migrate_down
 migrate_down:
 	lein run migrate-down
+
+.PHONY: export_database
+export_database:
+	pg_dump -h localhost -p 5434 -d baas -U liberdade -W >> backup.sql
+
+.PHONY: import_database
+import_database:
+	psql -h localhost -p 5434 -d baas -U liberdade -W  backup.sql
+
