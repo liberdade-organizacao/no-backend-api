@@ -204,10 +204,10 @@
 (defn auth-user [app-auth-key email password]
   (let [app-id (-> app-auth-key utils/decode-secret :app_id)
         params {"app_id" app-id
-	        "email" email
-		"password" (utils/hide password)}
-	result (db/run-operation-first "auth-user.sql" params)
-	user-id (:id result)]
+                "email" email
+                "password" (utils/hide password)}
+        result (db/run-operation-first "auth-user.sql" params)
+        user-id (:id result)]
     {"error" (when (nil? user-id)
                "Could not authorize user")
      "auth_key" (when (some? user-id)
@@ -226,15 +226,15 @@
 (defn update-user-password [user-auth-key old-password new-password]
   (let [user-info (utils/decode-secret user-auth-key)
         user-id (:user_id user-info)
-	app-id (:app_id user-info)
-	params {"user_id" user-id
-	        "app_id" app-id
-		"old_password" (utils/hide old-password)
-		"new_password" (utils/hide new-password)}
+	      app-id (:app_id user-info)
+        params {"user_id" user-id
+                "app_id" app-id
+                "old_password" (utils/hide old-password)
+                "new_password" (utils/hide new-password)}
         result (db/run-operation "change-user-password.sql" params)]
     {"error" (if (-> result count pos?)
                nil
-	       "Failed to change password")}))
+               "Failed to change password")}))
 
 (defn- new-file-path [app-id user-id filename]
   (str "a" app-id "/u" user-id "/" filename))
