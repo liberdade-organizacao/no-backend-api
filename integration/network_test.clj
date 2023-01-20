@@ -99,6 +99,28 @@
     (println body)
     body))
 
+(defn- change-user-password [user-auth-key old-password new-password]
+  (let [url (str service-url "/users/password")
+        params {"user_auth_key" user-auth-key
+                "old_password" old-password
+                "new_password" new-password}
+        response (curl/post url {:body (json/generate-string params)})
+        body (json/parse-string (get response :body))]
+    (println "# change user password")
+    (println body)
+    body))
+
+(defn- login-user [app-auth-key user-email password]
+  (let [url (str service-url "/users/login")
+        params {"app_auth_key" app-auth-key
+                "email" user-email
+                "password" password}
+        response (curl/post url {:body (json/generate-string params)})
+        body (json/parse-string (get response :body))]
+    (println "# login user")
+    (println body)
+    body))
+
 (defn- upload-user-file [user-auth-key filename contents]
   (let [url (str service-url "/users/files")
         headers {"X-USER-AUTH-KEY" user-auth-key
@@ -175,11 +197,22 @@
                              (get "auth_key"))
             _ (list-apps auth-key)
             user-email (str "u" (random-string 7) "@hotmail.com") 
-            user-password (random-string 7)
+            first-user-password (random-string 7)
+            user-password (random-string 9)
             user-auth-key (-> (create-user app-auth-key 
                                            user-email 
-                                           user-password)
+                                           first-user-password)
                               (get "auth_key"))
+            ; users can change passwords
+            _ (change-user-password user-auth-key 
+                                    first-user-password
+                                    user-password)
+            another-user-auth-key (-> (login-user app-auth-key
+                                                  user-email
+                                                  user-password)
+                                      (get "auth_key"))
+            _ (println "are user auth keys equal? " 
+                       (= user-auth-key another-user-auth-key))
             ; test if files can be uploaded and downloaded correctly
             filename-cloud "player.png"
             filename-local "./honey.png"
