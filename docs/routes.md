@@ -139,6 +139,25 @@ end
   - `error`: `null` or appropriate error message
   - `auth_key`: user's auth key
 
+## `DELETE /users`
+
+- Let users delete their accounts in an app
+- Parameters:
+  - `user_auth_key`: user's auth key
+  - `password`: user's password
+- Returns:
+  - `error`: `null` or appropriate error message
+
+## `POST /users/password`
+
+- Let users change their password
+- Parameters:
+  - `user_auth_key`: user's auth key
+  - `old_password`: user's old password
+  - `new_password`: user's new password
+- Returns:
+  - `error`: `null` or appropriate error message
+
 ## `POST /users/files`
 
 - Let users upload files
