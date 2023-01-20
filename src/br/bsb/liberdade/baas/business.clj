@@ -232,7 +232,6 @@
 		"old_password" (utils/hide old-password)
 		"new_password" (utils/hide new-password)}
         result (db/run-operation "change-user-password.sql" params)]
-    (println result)
     {"error" (if (-> result count pos?)
                nil
 	       "Failed to change password")}))

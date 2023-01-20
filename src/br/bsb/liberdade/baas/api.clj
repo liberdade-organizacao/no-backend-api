@@ -109,7 +109,7 @@
     (boilerplate (biz/delete-user user-auth-key password))))
 
 (defn update-user-password [req]
-  (let [params (-> req :body slurp body/read-str)
+  (let [params (-> req :body slurp json/read-str)
 	user-auth-key (get params "user_auth_key" nil)
 	old-password (get params "old_password" nil)
 	new-password (get params "get_password" nil)]
