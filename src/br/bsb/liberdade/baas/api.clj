@@ -263,7 +263,7 @@
     (db/undo-last-migration)))
 
 (defn- run []
-  (let [port (Integer/parseInt (or (System/getenv "PORT") "3000"))]
+  (let [port (Integer/parseInt (or (System/getenv "PORT") "7780"))]
     (server/run-server (wrap-cors #'app-routes #".*" (assoc site-defaults :security nil)) {:port port})
     (println (str "Listening at http://localhost:" port "/"))))
 

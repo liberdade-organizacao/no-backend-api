@@ -4,7 +4,7 @@
             [clojure.java.io :as io]
             [clojure.java.shell :as shell]))
 
-(def service-url "http://localhost:3000")
+(def service-url "http://localhost:7780")
 
 (defn- random-string [length]
   (loop [alphabet "abcdefghijklmnopqrstuvwxyz"
