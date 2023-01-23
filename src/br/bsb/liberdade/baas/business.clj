@@ -84,13 +84,43 @@
          invite-to-app-xf
          format-new-app-output-xf)))
 
+(defn- get-clients-apps-xf [state]
+  (if (-> state :error some?)
+    state
+    (let [result (db/run-operation "get-clients-apps.sql"
+                                   {"id" (:client-id state)})]
+      (assoc state :apps result))))
+
+(defn- read-app-transf [state app-info]
+  (let [result (db/run-operation-first "read-app.sql"
+                                       {"id" (:app_id app-info)})] 
+    (conj state {"name" (get result :name nil)
+                 "auth_key" (-> result
+		                :id
+				new-app-auth-key)})))
+
+(defn- populate-app-list-xf [state]
+  (if (-> state :error some?)
+    state
+    (let [apps (get state :apps [])]
+      (assoc state
+             :apps
+	     (reduce read-app-transf
+	             []
+		     apps)))))
+
+(defn- format-get-clients-apps-output-xf [state]
+  {"error" (get state :error nil)
+   "apps" (get state :apps nil)})
+
 (defn get-clients-apps [client-auth-key]
   (let [client-info (utils/decode-secret client-auth-key)
-        client-id (:client_id client-info)
-        result (db/run-operation "get-clients-apps.sql"
-                                      {"id" client-id})]
-    {"apps" result
-     "error" nil}))
+        client-id (:client_id client-info)]
+    (->> {:client-id client-id
+          :error nil}
+         get-clients-apps-xf
+	 populate-app-list-xf
+	 format-get-clients-apps-output-xf)))
 
 (defn- get-client-role-in-app-xf [state]
   (cond 
