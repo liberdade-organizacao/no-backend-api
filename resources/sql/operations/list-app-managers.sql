@@ -1,3 +1,4 @@
-SELECT email FROM clients WHERE id=ANY(
-    SELECT client_id FROM app_memberships WHERE app_id='%{app_id}'
-);
+SELECT clients.email, app_memberships.role
+FROM clients, app_memberships
+WHERE app_memberships.app_id='%{app_id}'
+AND app_memberships.client_id=clients.id;
