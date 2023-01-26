@@ -144,6 +144,12 @@
 	app-auth-key (get params "app_auth_key")]
     (boilerplate (biz/list-app-files client-auth-key app-auth-key))))
 
+(defn list-app-managers [req]
+  (let [params (-> req :query-string url-search-params)
+        client-auth-key (get params "client-auth-key" nil)
+        app-auth-key (get params "app_auth_key" nil)]
+    (boilerplate (biz/list-app-managers client-auth-key app-auth-key))))
+
 (defn upload-action [req]
   (let [params (-> req :body slurp json/read-str)
         client-auth-key (get params "client_auth_key" nil)
@@ -237,6 +243,7 @@
   (GET "/users/files/list" [] list-user-files)
   (DELETE "/users/files" [] delete-user-file)
   (GET "/apps/files/list" [] list-app-files)
+  (GET "/apps/clients" [] list-app-managers)
   (POST "/actions" [] upload-action)
   (GET "/actions" [] download-action)
   (GET "/actions/list" [] list-actions)

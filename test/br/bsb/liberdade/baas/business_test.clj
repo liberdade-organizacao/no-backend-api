@@ -555,6 +555,41 @@
       (is (= 0 (count thirdparty-files))))
     (db/drop-database)))
 
+(deftest list-app-managers
+  (testing "Let clients list managers in an app"
+    (db/setup-database)
+    (db/run-migrations)
+    (let [result (biz/new-client "owner@liberdade.bsb.br" "pwd" false)
+          owner-auth-key (get result "auth_key" nil)
+          result (biz/new-app owner-auth-key "list managers app")
+          app-auth-key (get result "auth_key" nil)
+          contrib-email "contrib@liberdade.bsb.br"
+          result (biz/new-client contrib-email "pwd2" false)
+          contrib-auth-key (get result "auth_key" nil)
+          result (biz/new-client "random@gmail.com" "pwd3" false)
+          random-auth-key (get result "auth_key" nil)
+          result (biz/invite-to-app-by-email owner-auth-key app-auth-key contrib-email "contributor")
+          invitation-error (get result "error" nil)
+          result (biz/list-app-managers owner-auth-key app-auth-key)
+          owner-error (get result "error" nil)
+          owner-managers (get result "clients" nil)
+          result (biz/list-app-managers contrib-auth-key app-auth-key)
+          contrib-error (get result "error" nil)
+          contrib-managers (get result "clients" nil)
+          result (biz/list-app-managers random-auth-key app-auth-key)
+          random-error (get result "error" nil)
+          random-managers (get result "clients" nil)]
+      (is (nil? invitation-error))
+      (is (nil? owner-error))
+      (is (some? owner-managers))
+      (is (= 2 (count owner-managers)))
+      (is (nil? contrib-error))
+      (is (some? contrib-managers))
+      (is (= 2 (count contrib-managers)))
+      (is (some? random-error))
+      (is (nil? random-managers)))
+    (db/drop-database)))
+
 (def action-script-A "
   function main(param)
     print(\"hi\")
