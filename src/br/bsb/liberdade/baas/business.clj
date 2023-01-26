@@ -319,6 +319,34 @@
 	maybe-list-app-files-xf
 	format-list-app-files-output-xf)))
 
+(defn- list-app-managers-xf [state]
+  (cond
+    (-> state :error some?)
+      state
+    (is-role-invalid? state)
+      (assoc state :error "Not enough permissions")
+    :else
+      (assoc state 
+             :managers 
+             (db/run-operation "list-app-managers.sql"
+                               {"app_id" (:app-id state)}))))
+
+(defn- format-list-app-managers-output-xf [state]
+  {"error" (get state :error nil)
+   "clients" (get state :managers nil)})
+
+(defn list-app-managers [client-auth-key app-auth-key]
+  (->> {:error nil
+        :client-id (-> client-auth-key
+                       utils/decode-secret
+                       :client_id)
+        :app-id (-> app-auth-key
+                    utils/decode-secret
+                    :app_id)}
+       get-client-role-in-app-xf
+       list-app-managers-xf
+       format-list-app-managers-output-xf))
+
 (defn- maybe-upload-action-xf [state]
   (cond 
     (some? (:error state)) 
