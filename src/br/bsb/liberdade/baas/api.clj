@@ -115,6 +115,12 @@
         new-password (get params "new_password" nil)]
     (boilerplate (biz/update-user-password user-auth-key old-password new-password))))
 
+(defn list-app-users [req]
+  (let [params (-> req :query-string url-search-params)
+        client-auth-key (get params "client_auth_key" nil)
+        app-auth-key (get params "app_auth_key" nil)]
+    (boilerplate (biz/list-app-users client-auth-key app-auth-key))))
+
 (defn upload-user-file [req]
   (let [user-auth-key (-> req :headers (get "x-user-auth-key"))
         filename (-> req :headers (get "x-filename"))
@@ -231,6 +237,7 @@
   (POST "/users/signup" [] users-signup)
   (POST "/users/login" [] users-login)
   (DELETE "/users" [] delete-user)
+  (GET "/apps/users" [] list-app-users)
   (POST "/users/password" [] update-user-password)
   (POST "/users/files" [] upload-user-file)
   (GET "/users/files" [] download-user-file)

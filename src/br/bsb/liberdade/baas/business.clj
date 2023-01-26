@@ -239,6 +239,35 @@
                nil
                "Failed to change password")}))
 
+(defn- is-role-invalid? [state]
+  (not (utils/in? possible-app-roles (:role state))))
+
+(defn- list-app-users-xf [state]
+  (cond
+    (-> state :error some?)
+      state
+    (is-role-invalid? state)
+      (assoc state :error "Not enough permissions")
+    :else
+      (assoc state :users (db/run-operation "list-app-users.sql"
+                                            {"app_id" (:app-id state)}))))
+
+(defn- format-list-app-users-output-xf [state]
+  {"error" (get state :error nil)
+   "users" (get state :users nil)})
+
+(defn list-app-users [client-auth-key app-auth-key]
+  (->> {:error nil
+        :client-id (-> client-auth-key
+                       utils/decode-secret
+                       :client_id)
+        :app-id (-> app-auth-key
+                    utils/decode-secret
+                    :app_id)}
+       get-client-role-in-app-xf
+       list-app-users-xf
+       format-list-app-users-output-xf))
+
 (defn- new-file-path [app-id user-id filename]
   (str "a" app-id "/u" user-id "/" filename))
 
@@ -286,9 +315,6 @@
     {"error" (if (pos? (count result))
                nil
                "Failed to delete this file")}))
-
-(defn- is-role-invalid? [state]
-  (not (utils/in? possible-app-roles (:role state))))
 
 (defn- maybe-list-app-files-xf [state]
   (cond (some? (:error state)) 
