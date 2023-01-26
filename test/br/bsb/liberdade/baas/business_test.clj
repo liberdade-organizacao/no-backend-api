@@ -363,6 +363,23 @@
 	  user-auth-key-again (get result "auth_key" nil)]
       (is (nil? error))
       (is (= user-auth-key user-auth-key-again)))
+    (db/drop-database))
+  (testing "clients can list the users from their apps"
+    (db/setup-database)
+    (db/run-migrations)
+    (let [result (biz/new-client "owner@liberdade.bsb.br" "pwd" false)
+          client-auth-key (get result "auth_key" nil)
+          result (biz/new-app client-auth-key "list users apps")
+          app-auth-key (get result "auth_key" nil)
+          _ (biz/new-user app-auth-key "user1@gmail.com" "pwd")
+          _ (biz/new-user app-auth-key "user2@gmail.com" "pwd")
+          _ (biz/new-user app-auth-key "user3@gmail.com" "pwd")
+          result (biz/list-app-users client-auth-key app-auth-key)
+          error (get result "error" nil)
+          users (get result "users" nil)]
+      (is (nil? error))
+      (is (some? users))
+      (is (= 3 (count users))))
     (db/drop-database)))
 
 (deftest user-accounts--error-handling
