@@ -172,6 +172,16 @@
     (println body)
     body))
 
+(defn list-actions [client-auth-key app-auth-key]
+  (let [url (str service-url "/actions/list")
+        query-params {"client_auth_key" client-auth-key
+                      "app_auth_key" app-auth-key}
+        response (curl/get url {:query-params query-params})
+        body (json/parse-string (get response :body))]
+    (println "# list actions")
+    (println body)
+    body))
+
 (defn run-action [user-auth-key app-auth-key action-name action-param]
   (let [url (str service-url "/actions/run")
         params {"user_auth_key" user-auth-key
@@ -243,6 +253,8 @@
                              app-auth-key 
                              action-name 
                              action-contents)
+            _ (list-actions auth-key
+                            app-auth-key)
             _ (run-action user-auth-key 
                           app-auth-key 
                           action-name 
