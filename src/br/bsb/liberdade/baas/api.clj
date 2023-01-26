@@ -166,7 +166,7 @@
   (let [params (-> req :query-string url-search-params)
         client-auth-key (get params "client_auth_key" nil)
 	app-auth-key (get params "app_auth_key" nil)]
-    (biz/list-actions client-auth-key app-auth-key)))
+    (boilerplate (biz/list-actions client-auth-key app-auth-key))))
 
 (defn delete-action [req]
   (let [params (-> req :body slurp json/read-str)
