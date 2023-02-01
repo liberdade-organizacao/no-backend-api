@@ -546,9 +546,22 @@
             result (db/run-operation operation {})]
         (assoc state things result))))
 
+(def unwanted-fields [:password])
+(defn- maybe-cleanup-fields [things]
+  (if (nil? things)
+    nil
+    (map #(reduce (fn [state [k v]]
+                    (if (utils/in? unwanted-fields k)
+		      state
+                      (assoc state k (str v))))
+                  {}
+  	          %)
+         things)))
+
 (defn- format-list-all-things-output-xf [state]
   {"error"         (get state :error nil)
-   (:things state) (get state (:things state) nil)})
+   (:things state) (-> (get state (:things state) nil)
+                       maybe-cleanup-fields)})
 
 (defn- list-all-things [client-auth-key things]
   (->> {:error nil
