@@ -167,6 +167,19 @@
 				    action-name 
 				    action-script))))
 
+(defn update-action [req]
+  (let [params (-> req :body slurp json/read-str)
+        client-auth-key (get params "client_auth_key" nil)
+	app-auth-key (get params "app_auth_key" nil)
+	old-action-name (get params "old_action_name" nil)
+	new-action-name (get params "new_action_name" nil)
+	action-script (get params "action_script" nil)]
+    (boilerplate (biz/update-action client-auth-key 
+                                    app-auth-key 
+				    old-action-name
+				    new-action-name
+				    action-script))))
+
 (defn download-action [req]
   (let [params (-> req :query-string url-search-params)
         client-auth-key (get params "client_auth_key" nil)
@@ -252,6 +265,7 @@
   (GET "/apps/files/list" [] list-app-files)
   (GET "/apps/clients" [] list-app-managers)
   (POST "/actions" [] upload-action)
+  (PATCH "/actions" [] update-action)
   (GET "/actions" [] download-action)
   (GET "/actions/list" [] list-actions)
   (DELETE "/actions" [] delete-action)
