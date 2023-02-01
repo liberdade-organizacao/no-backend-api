@@ -677,16 +677,39 @@
           second-gotten-script (biz/read-action client-auth-key
                                                 app-auth-key
                                                 action-name)       
+	  temp-action-name "strange_aeons.lua"
+	  result (biz/update-action client-auth-key
+	                            app-auth-key
+				    action-name
+				    temp-action-name
+				    action-script-A)
+	  first-rename-error (get result "error" nil)
+          third-gotten-script (biz/read-action client-auth-key
+                                               app-auth-key
+                                               temp-action-name)       
+          result (biz/update-action client-auth-key
+	                            app-auth-key
+				    temp-action-name
+				    action-name
+				    action-script-B)
+          forth-gotten-script (biz/read-action client-auth-key
+                                               app-auth-key
+                                               action-name)  
+	  second-rename-error (get result "error" nil)
           action-list-before (biz/list-actions client-auth-key app-auth-key)
           result (biz/delete-action client-auth-key
                                     app-auth-key
                                     action-name)
           deletion-error (get result "error" nil)
           action-list-after (biz/list-actions client-auth-key 
-                                              app-auth-key)] 
+                                              app-auth-key)]
       (is (nil? creation-error))
       (is (= first-gotten-script action-script-A))
       (is (= second-gotten-script action-script-B))
+      (is (nil? first-rename-error))
+      (is (nil? second-rename-error))
+      (is (= third-gotten-script action-script-A))
+      (is (= forth-gotten-script action-script-B))
       (is (= 1 (count action-list-before)))
       (is (= 0 (count action-list-after)))
       (is (nil? deletion-error)))

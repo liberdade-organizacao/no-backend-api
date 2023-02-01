@@ -432,6 +432,38 @@
 	maybe-upload-action-xf
 	format-standard-xf)))
 
+(defn- update-action-xf [state]
+  (cond 
+    (some? (:error state)) 
+      state
+    (is-role-invalid? state)
+      (assoc state :error "Not enough permissions")
+    :else
+      (let [app-id (:app-id state)
+            old-action-name (:old-action-name state)
+            new-action-name (:new-action-name state)
+	    script (:script state)
+	    params {"app_id" app-id
+	            "old_name" old-action-name
+		    "new_name" new-action-name
+		    "script" script}
+	    result (db/run-operation "update-action.sql" params)]
+        (assoc state :error (when (= 0 (count result)) "Failed to upload script")))))
+
+(defn update-action 
+  [client-auth-key app-auth-key old-action-name new-action-name script]
+  (let [client-id (-> client-auth-key utils/decode-secret :client_id)
+	app-id (-> app-auth-key utils/decode-secret :app_id)]
+    (-> {:client-id client-id
+         :app-id app-id
+	 :old-action-name old-action-name
+	 :new-action-name new-action-name
+	 :script script
+	 :error nil}
+        get-client-role-in-app-xf
+	update-action-xf
+	format-standard-xf)))
+
 (defn- maybe-download-action-xf [state]
   (if (or (-> state :error some?) (is-role-invalid? state))
     {"error" "failed to download action"}
