@@ -229,6 +229,38 @@
       (is (pos? (count invited-admin-apps)))
       (is (some? bad-invitation-error))
       (is (= 0 (count invited-contrib-apps))))
+    (db/drop-database))
+  (testing "revoked clients should not invite other clients"
+    (db/setup-database)
+    (db/run-migrations)
+    (let [revoker-email "revoker@pm.me"
+          result (biz/new-client "revoker@pm.me" "pwd" false)
+          revoker-auth-key (get result "auth_key" nil)
+	  revokee-email "revokee@gmail.com"
+	  result (biz/new-client revokee-email "pwd2" false)
+	  revokee-auth-key (get result "auth_key" nil)
+	  result (biz/new-app revokee-auth-key "revoking people")
+	  app-auth-key (get result "auth_key" nil)
+	  result (biz/invite-to-app-by-email revokee-auth-key
+	                                     app-auth-key
+					     revoker-email
+					     "admin")
+	  first-invitation-error (get result "error" nil)
+	  result (biz/revoke-from-app-by-email revoker-auth-key
+	                                       app-auth-key
+					       revokee-email)
+          revocation-error (get result "error" nil)
+	  result (biz/invite-to-app-by-email revokee-auth-key
+	                                     app-auth-key
+					     revoker-email
+					     "contributor")
+	  second-invitation-error (get result "error" nil)
+          result (biz/get-clients-apps revokee-auth-key)
+	  invokee-apps (get result "apps" nil)]
+      (is (nil? first-invitation-error))
+      (is (nil? revocation-error))
+      (is (some? second-invitation-error))
+      (is (-> invokee-apps count (= 0))))
     (db/drop-database)))
 
 (deftest clients-change-password

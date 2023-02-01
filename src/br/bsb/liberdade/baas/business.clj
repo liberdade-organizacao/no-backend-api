@@ -135,9 +135,9 @@
          maybe-delete-app-xf
          format-delete-app-output-xf)))
 
-(defn- validate-inviter-role-xf [state]
+(defn- validate-admin-role-xf [state]
   (if (not= "admin" (:role state))
-    {:error "Inviter has no rights to do this"}
+    {:error "Client has no rights to do this"}
     state))
 
 (defn- get-invitee-client-id-by-email-xf [state]
@@ -166,10 +166,38 @@
           :invitee-email invitee-email
           :invitee-role invitee-role}
          get-client-role-in-app-xf
-         validate-inviter-role-xf
+         validate-admin-role-xf
          get-invitee-client-id-by-email-xf
          invite-to-app-xf
          format-invite-to-app-output-xf)))
+
+(defn- revoke-from-app-xf [state]
+  (if (-> state :error some?)
+    state
+    (let [result (db/run-operation "revoke-from-app.sql"
+                                   {"revoked_email" (:revoked-email state)
+				    "app_id" (:app-id state)})]
+      (if (-> result count pos?)
+        state
+	(assoc state :error "No one was removed")))))
+
+(defn- format-revoke-from-app-by-email-output-xf [state]
+  {"error" (get state :error nil)})
+
+(defn revoke-from-app-by-email
+  [revoker-auth-key app-auth-key revokee-email]
+  (->> {:error nil
+        :client-id (-> revoker-auth-key
+	                utils/decode-secret
+			:client_id)
+	:app-id (-> app-auth-key
+	            utils/decode-secret
+		    :app_id)
+        :revoked-email revokee-email}
+       get-client-role-in-app-xf
+       validate-admin-role-xf
+       revoke-from-app-xf
+       format-revoke-from-app-by-email-output-xf))
 
 (defn change-client-password [auth-key old-password new-password]
   (let [client-info (utils/decode-secret auth-key)

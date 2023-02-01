@@ -74,6 +74,15 @@
                                              invitee-email
                                              invitee-role))))
 
+(defn revoke-from-app [req]
+  (let [params (-> req :body slurp json/read-str)
+        revoker-auth-key (get params "revoker_auth_key" nil)
+        app-auth-key (get params "app_auth_key" nil)
+        revokee-email (get params  "revokee_email" nil)]
+    (boilerplate (biz/revoke-from-app-by-email revoker-auth-key
+                                               app-auth-key
+                                               revokee-email))))
+
 (defn update-client-password [req]
   (let [params (-> req :body slurp json/read-str)
         client-auth-key (get params "auth_key" nil)
@@ -152,7 +161,7 @@
 
 (defn list-app-managers [req]
   (let [params (-> req :query-string url-search-params)
-        client-auth-key (get params "client-auth-key" nil)
+        client-auth-key (get params "client_auth_key" nil)
         app-auth-key (get params "app_auth_key" nil)]
     (boilerplate (biz/list-app-managers client-auth-key app-auth-key))))
 
@@ -238,6 +247,7 @@
   (GET "/apps" [] list-apps)
   (DELETE "/apps" [] delete-app)
   (POST "/apps/invite" [] invite-to-app)
+  (POST "/apps/revoke" [] revoke-from-app)
   (POST "/clients/password" [] update-client-password)
   (DELETE "/clients" [] delete-client)
   (POST "/users/signup" [] users-signup)
