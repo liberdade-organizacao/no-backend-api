@@ -5,6 +5,7 @@
             [clojure.java.shell :as shell]))
 
 (def service-url "http://localhost:7780")
+(def psql-params ["-h" "localhost" "-p" "5434" "-d" "baas" "-U" "liberdade" "-c"])
 
 (defn- random-string [length]
   (loop [alphabet "abcdefghijklmnopqrstuvwxyz"
@@ -27,6 +28,9 @@
 
 (defn- sleep [t]
   (shell/sh "sleep" (str t)))
+
+(defn- psql [query]
+  (shell/sh "psql" "-h" "localhost" "-p" "5434" "-d" "baas" "-U" "liberdade" "-c" query))
 
 (defn- wait-for-server [no-tries]
   (do
@@ -194,6 +198,42 @@
     (println body)
     body))
 
+(defn create-admin [email password]
+  (do
+    (println "# create admin #")
+    (create-client-account email password)
+    (println (psql (str "UPDATE clients " 
+                         "SET is_admin='on' "
+		         "WHERE email='" email "';")))
+    (auth-client email password)))
+
+(defn list-all-clients [admin-auth-key]
+  (println "# listing all clients")
+  (let [url (str service-url "/clients/all")
+        headers {"X-CLIENT-AUTH-KEY" admin-auth-key}
+	response (curl/get url {:headers headers})
+	body (-> response :body json/parse-string)]
+    (println body)
+    body))
+
+(defn list-all-apps [admin-auth-key]
+  (println "# listing all apps")
+  (let [url (str service-url "/apps/all")
+        headers {"X-CLIENT-AUTH-KEY" admin-auth-key}
+	response (curl/get url {:headers headers})
+	body (-> response :body json/parse-string)]
+    (println body)
+    body))
+
+(defn list-all-files [admin-auth-key]
+  (println "# listing all clients")
+  (let [url (str service-url "/files/all")
+        headers {"X-CLIENT-AUTH-KEY" admin-auth-key}
+	response (curl/get url {:headers headers})
+	body (-> response :body json/parse-string)]
+    (println body)
+    body))
+
 (defn- main []
   (let [email (str "c" (random-string 6) "@liberdade.bsb.br")
         password (random-string 12)]
@@ -292,6 +332,13 @@
 				 (str "filename=" filename))
 	    downloaded-contents (get response "result" nil)
 	    _ (println (str "are downloaded contents equal? " (= contents downloaded-contents)))
+
+            ; admin tests
+	    result (create-admin "crisjr@pm.me" "qotsa")
+	    admin-auth-key (get result "auth_key" nil)
+	    _ (list-all-clients admin-auth-key)
+	    _ (list-all-apps admin-auth-key)
+	    _ (list-all-files admin-auth-key)
 
 	    ; strip down
             _ (delete-app auth-key app-auth-key)
