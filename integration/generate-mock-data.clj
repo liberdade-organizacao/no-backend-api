@@ -56,54 +56,83 @@
 	body (json/parse-string (:body response))]
     body))
 
+(defn- upload-file [user-auth-key filename contents]
+  (let [url (str service-url "/users/files")
+        headers {"X-USER-AUTH-KEY" user-auth-key
+                 "X-FILENAME" filename}
+        response (curl/post url {:body contents
+                                 :headers headers})
+        body (json/parse-string (get response :body))]
+    body))
+
+(defn- psql [query]
+  (shell/sh "psql" "-h" "localhost" "-p" "5434" "-d" "baas" "-U" "liberdade" "-c" query))
+
 (defn main []
-  (let [client-creation-result (create-client "hello@crisjr.eng.br" "password")
-        app-creation-result (create-app (get client-creation-result "auth_key" nil) "Shiny App")]
+  (let [email "hello@crisjr.eng.br"
+        client-creation-result (create-client email "password")
+	auth-key (get client-creation-result "auth_key" nil)
+        first-app-creation-result (create-app auth-key "Shiny App")
+	second-app-creation-result (create-app auth-key "FPCL")]
     (println client-creation-result)
-    (println app-creation-result))
-  (println (map (fn [email]
-         (let [client-creation-result (create-client email "pwd")
-	       client-auth-key (get client-creation-result "auth_key" nil)
-	       how-many-apps (+ 3 (rand-int 5))]
-	   (loop [app-i 0]
-	     (when (< app-i how-many-apps)
-	       (let [app-name (str "app " (random-string 10))
-	             app-creation-result (create-app client-auth-key 
-		                                     app-name)
-		     app-auth-key (get app-creation-result "auth_key" nil)
-		     how-many-users (+ 20 (rand-int 50))
-		     how-many-actions (inc (rand-int 3))]
-		 (println (str "users: " how-many-users))
-		 (println (str "actions: " how-many-actions))
-		 (loop [user-i 0
-		        user-info (create-user app-auth-key
-			                       (str "u"
-					            (random-string 7)
-						    "@gmail.com")
-					       "pwd")]
-		   (when (< user-i how-many-users)
-		     (println user-info)
-		     ; TODO upload user files
-		     (recur (inc user-i)
-		            (create-user app-auth-key
-			                 (str "U"
-					      (random-string 7)
-					      "@gmail.com")
-					 "pwd"))))
-	  	 (loop [action-i 0]
-		   (-> (create-action client-auth-key
-		                      app-auth-key
-				      (str "A" 
-				           (random-string 5) 
-					   ".lua")
-				      standard-script)
+    (println first-app-creation-result)
+    (println second-app-creation-result)
+    (psql (str "UPDATE clients SET is_admin='on' WHERE email='" email "';")))
+  (-> (map (fn [email]
+        (let [client-creation-result (create-client email "pwd")
+	      client-auth-key (get client-creation-result "auth_key" nil)
+	      how-many-apps (+ 3 (rand-int 5))]
+	  (loop [app-i 0]
+	    (when (< app-i how-many-apps)
+	      (let [app-name (str "app " (random-string 10))
+	            app-creation-result (create-app client-auth-key 
+	                                            app-name)
+		    app-auth-key (get app-creation-result "auth_key" nil)
+		    how-many-users (+ 20 (rand-int 50))
+		    how-many-actions (inc (rand-int 3))]
+		(println (str "users: " how-many-users))
+		(println (str "actions: " how-many-actions))
+		(loop [user-i 0
+		       user-info (create-user app-auth-key
+			                      (str "u"
+					           (random-string 7)
+						   "@gmail.com")
+					      "pwd")]
+		  (when (< user-i how-many-users)
+		    (println user-info)
+		    (loop [file-i 0
+		           how-many-files (+ 10 (rand-int 10))]
+		      (when (< file-i how-many-files)
+		        (-> (upload-file (get user-info "auth_key" nil)
+			                 (str "file-"
+				              (random-string 15)
+				    	       ".txt")
+				         (str "just some random file here\n"
+				              (random-string 100)))
+			    println)
+			(recur (inc file-i)
+			       how-many-files)))
+		    (recur (inc user-i)
+		           (create-user app-auth-key
+			                (str "U"
+					     (random-string 7)
+					     "@gmail.com")
+					"pwd"))))
+	  	(loop [action-i 0]
+		  (-> (create-action client-auth-key
+		                     app-auth-key
+				     (str "A" 
+				          (random-string 5) 
+					  ".lua")
+				     standard-script)
 		       println)
-		   (when (< action-i how-many-actions)
-		     (recur (inc action-i))))
-		 (recur (inc app-i)))))))
+		    (when (< action-i how-many-actions)
+		      (recur (inc action-i))))
+           (recur (inc app-i)))))))
        ["bear@duck.berlin"
         "duck@duck.amsterdam"
-	"contato@liberdade.bsb.br"])))
+	"contato@liberdade.bsb.br"])
+  println))
 
 (main)
 
