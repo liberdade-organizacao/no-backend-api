@@ -154,6 +154,16 @@
     (println body)
     body))
 
+(defn list-app-users [client-auth-key app-auth-key]
+  (let [url (str service-url "/apps/users")
+        params {"client_auth_key" client-auth-key
+	        "app_auth_key" app-auth-key}
+	response (curl/get url {:query-params params})
+	body (-> response :body json/parse-string)]
+    (println "# list app users")
+    (println body)
+    body))
+
 (defn delete-user-file [user-auth-key filename]
   (let [url (str service-url "/users/files")
         headers {"X-USER-AUTH-KEY" user-auth-key
@@ -286,6 +296,7 @@
             _ (list-user-files user-auth-key)
             _ (delete-user-file user-auth-key filename-cloud)
             _ (list-user-files user-auth-key)
+	    _ (list-app-users auth-key app-auth-key)
 	    ; test if actions can be correctly proxied
             action-name "integration_test.lua"
             action-contents (slurp "./integration_test.lua")
