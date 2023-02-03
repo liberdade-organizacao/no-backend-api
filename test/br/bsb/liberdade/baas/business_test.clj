@@ -796,3 +796,19 @@
       (is (some? get-pwned)))
     (db/drop-database)))
 
+(deftest check-if-admin
+  (testing "check if client is an admin"
+    (db/setup-database)
+    (db/run-migrations)
+    (let [result (biz/new-client "admin@liberdade.bsb.br" "senha" true)
+          admin-auth-key (get result "auth_key" nil)
+	  result (biz/new-client "random@hotmail.com" "password" false)
+	  client-auth-key (get result "auth_key" nil)
+	  result (biz/check-admin admin-auth-key)
+	  admin-error (get result "error" nil)
+	  result (biz/check-admin client-auth-key)
+	  regular-error (get result "error" nil)]
+      (is (nil? admin-error))
+      (is (some? regular-error)))
+    (db/drop-database)))
+

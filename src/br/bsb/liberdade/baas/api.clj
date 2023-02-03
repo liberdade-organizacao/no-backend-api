@@ -253,6 +253,9 @@
 	      email (get params "email" nil)]
     (boilerplate (biz/demote-admin auth-key email))))
 
+(defn check-admin [req]
+  (list-all-things req biz/check-admin))
+
 (defroutes app-routes
   (POST "/clients/signup" [] clients-signup)
   (POST "/clients/login" [] clients-login)
@@ -286,6 +289,7 @@
   (GET "/admins/all" [] list-all-admins)
   (POST "/admins" [] promote-to-admin)
   (DELETE "/admins" [] demote-admin)
+  (GET "/admins/check" [] check-admin)
   (GET "/health" [] check-health))
 
 ; ################
