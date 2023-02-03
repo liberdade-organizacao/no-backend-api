@@ -615,3 +615,12 @@
       maybe-demote-admin-xf
       format-standard-xf))
 
+(defn- format-check-admin-output-xf [state]
+  {"error" (if (-> state :is_admin false?) "not admin" nil)})
+
+(defn check-admin [client-auth-key]
+  (-> {:error nil
+       :client_id (-> client-auth-key utils/decode-secret :client_id)}
+      is-client-admin-xf
+      format-check-admin-output-xf))
+
