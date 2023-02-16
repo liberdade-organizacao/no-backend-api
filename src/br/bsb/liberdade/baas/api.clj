@@ -11,7 +11,8 @@
             [br.bsb.liberdade.baas.db :as db]
             [br.bsb.liberdade.baas.business :as biz]
             [br.bsb.liberdade.baas.proxies :as proxies]
-            [br.bsb.liberdade.baas.tar.decompress :as untar]))
+            [br.bsb.liberdade.baas.tar.decompress :as untar]
+            [br.bsb.liberdade.baas.jobs :as jobs]))
 
 ; #############
 ; # UTILITIES #
@@ -321,11 +322,14 @@
 
 
 (defn -main [& args]
- (let []
+  (do
     (when (some #(= "migrate-up" %) args)
       (migrate-up))
     (when (some #(= "migrate-down" %) args)
       (migrate-down))
     (when (some #(= "up" %) args)
-      (run))))
+      (run))
+    (when (some #(= "to-recfile" %) args)
+      (apply jobs/to-recfile (rest args)))
+    ))
 
