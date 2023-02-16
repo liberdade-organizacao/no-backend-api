@@ -33,23 +33,27 @@
 (defn delete-file [file]
   (when (.isDirectory file)
     (run! delete-file (.listFiles file)))
-  (io/delete-file file))
+  (io/delete-file file true))
 
 (defn extract [raw-binary]
   (let [temp-id (random-string 7)
         temp-file-name (str "/tmp/" temp-id ".tar.gz")
-	temp-output-folder-name (str "/tmp/" temp-id ".d")
-	_ (spit-bytes temp-file-name raw-binary)
-	_ (tar/decompress-archive temp-file-name temp-output-folder-name "gz")
-	extracted-files (list-files temp-output-folder-name)
-	result (->> extracted-files
-	            (map #(.getPath %))
-		    (reduce (fn [state file]
-		              (assoc state file (slurp file)))
-		            {}))]
-    ; TODO read files from temp output folder name
-    ; TODO delete temporary files
-    (-> temp-file-name io/file delete-file)
-    (-> temp-output-folder-name io/file delete-file)
-    result))
- 
+	temp-output-folder-name (str "/tmp/" temp-id ".d")]
+    (try
+      (let [_ (spit-bytes temp-file-name raw-binary)
+            _ (tar/decompress-archive temp-file-name temp-output-folder-name "gz")
+	    extracted-files (list-files temp-output-folder-name)
+	    result (->> extracted-files
+	                (map #(.getPath %))
+		        (reduce (fn [state file]
+		                  (assoc state file (slurp file)))
+		                {}))]
+        (-> temp-file-name io/file delete-file)
+        (-> temp-output-folder-name io/file delete-file)
+        result)
+    (catch Exception e
+      (do
+        (-> temp-file-name io/file delete-file)
+        (-> temp-output-folder-name io/file delete-file)
+        nil)))))
+
