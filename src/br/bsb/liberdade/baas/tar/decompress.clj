@@ -12,13 +12,44 @@
              (inc i)
              (str state (nth alphabet (rand-int (count alphabet))))))))
 
+(defn slurp-bytes
+  "Slurp the bytes from a slurpable thing"
+  [x]
+  (with-open [in (clojure.java.io/input-stream x)
+              out (java.io.ByteArrayOutputStream.)]
+    (clojure.java.io/copy in out)
+    (.toByteArray out)))
+
+(defn spit-bytes [filename contents]
+  (with-open [w (io/output-stream filename)]
+    (.write w contents)))
+
+(defn list-files [directory]
+  (-> directory
+      io/file
+      file-seq
+      rest))
+
+(defn delete-file [file]
+  (when (.isDirectory file)
+    (run! delete-file (.listFiles file)))
+  (io/delete-file file))
+
 (defn extract [raw-binary]
   (let [temp-id (random-string 7)
         temp-file-name (str "/tmp/" temp-id ".tar.gz")
 	temp-output-folder-name (str "/tmp/" temp-id ".d")
-	_ (spit temp-file-name raw-binary)
-	result (tar/decompress-archive temp-file-name temp-output-folder-name "gz")]
+	_ (spit-bytes temp-file-name raw-binary)
+	_ (tar/decompress-archive temp-file-name temp-output-folder-name "gz")
+	extracted-files (list-files temp-output-folder-name)
+	result (->> extracted-files
+	            (map #(.getPath %))
+		    (reduce (fn [state file]
+		              (assoc state file (slurp file)))
+		            {}))]
     ; TODO read files from temp output folder name
     ; TODO delete temporary files
+    (-> temp-file-name io/file delete-file)
+    (-> temp-output-folder-name io/file delete-file)
     result))
  
