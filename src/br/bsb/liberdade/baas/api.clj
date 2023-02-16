@@ -189,6 +189,14 @@
 				    new-action-name
 				    action-script))))
 
+(defn upload-actions [req]
+  (let [client-auth-key (-> req :headers (get "x-client-auth-key"))
+        app-auth-key (-> req :headers (get "x-app-auth-key"))
+	compressed-actions (-> req :body slurp)]
+    (boilerplate (biz/upload-actions client-auth-key 
+                                     app-auth-key 
+				     compressed-actions))))
+
 (defn download-action [req]
   (let [params (-> req :query-string url-search-params)
         client-auth-key (get params "client_auth_key" nil)
@@ -279,6 +287,7 @@
   (GET "/apps/clients" [] list-app-managers)
   (POST "/actions" [] upload-action)
   (PATCH "/actions" [] update-action)
+  (POST "/actions/bulk" [] upload-actions)
   (GET "/actions" [] download-action)
   (GET "/actions/list" [] list-actions)
   (DELETE "/actions" [] delete-action)

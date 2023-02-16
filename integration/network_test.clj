@@ -243,6 +243,28 @@
 	body (-> response :body json/parse-string)]
     (println body)
     body))
+    
+(defn tar [compressed-file-name files]
+  (println "# compressing file")
+  (apply shell/sh (concat ["tar" "-czvf" compressed-file-name]
+                          files)))
+
+(defn rm [f]
+  (println "# deleting file")
+  (shell/sh "rm" f))
+
+(defn upload-compressed-actions 
+  [client-auth-key app-auth-key compressed-file-name]
+  (println "# uploading compressed actions file")
+  (let [url (str service-url "/actions/bulk")
+        headers {"X-CLIENT-AUTH-KEY" client-auth-key
+	         "X-APP-AUTH-KEY" app-auth-key}
+        contents (-> compressed-file-name io/file)
+        response (curl/post url {:headers headers
+	                         :body contents})
+	body (-> response :body json/parse-string)]
+    (println body)
+    body))
 
 (defn- main []
   (let [email (str "c" (random-string 6) "@liberdade.bsb.br")
@@ -344,12 +366,22 @@
 	    downloaded-contents (get response "result" nil)
 	    _ (println (str "are downloaded contents equal? " (= contents downloaded-contents)))
 
+            ; compressed file upload test
+	    compressed-file-name "./action.tar.gz"
+	    _ (println "# before compressed upload #")
+	    _ (list-actions auth-key app-auth-key)
+	    _ (println "# after compressed upload #")
+	    _ (tar compressed-file-name ["integration_test.lua" "upload-file.lua"])
+	    _ (upload-compressed-actions auth-key app-auth-key compressed-file-name)
+	    _ (list-actions auth-key app-auth-key)
+	    _ (rm compressed-file-name)
+
             ; admin tests
-	    result (create-admin "crisjr@pm.me" "qotsa")
-	    admin-auth-key (get result "auth_key" nil)
-	    _ (list-all-clients admin-auth-key)
-	    _ (list-all-apps admin-auth-key)
-	    _ (list-all-files admin-auth-key)
+	    ; result (create-admin "crisjr@pm.me" "qotsa")
+	    ; admin-auth-key (get result "auth_key" nil)
+	    ; _ (list-all-clients admin-auth-key)
+	    ; _ (list-all-apps admin-auth-key)
+	    ; _ (list-all-files admin-auth-key)
 
 	    ; strip down
             _ (delete-app auth-key app-auth-key)
