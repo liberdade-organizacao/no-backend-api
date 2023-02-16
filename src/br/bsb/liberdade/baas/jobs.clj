@@ -1,5 +1,6 @@
 (ns br.bsb.liberdade.baas.jobs
-  (:require [br.bsb.liberdade.baas.db :as db]
+  (:require [clojure.data.json :as json]
+            [br.bsb.liberdade.baas.db :as db]
             [br.bsb.liberdade.baas.utils :as utils]))
 
 ; ####################
@@ -12,8 +13,17 @@
        "%key: id"
        "\n"))
 
+(defn- stringify [k v]
+  (cond
+    (= k :contents)
+      (String. v)
+    (= k :script)
+      (json/write-str v)
+    :else
+      v))
+
 (defn- build-rec-row-fx [inlet [k v]]
-  (str inlet (name k) ": " (if (= k :contents) (String. v) v) "\n"))
+  (str inlet (name k) ": " (stringify k v) "\n"))
 
 (defn- build-rec-entry-fx [outlet entry]
   (str outlet
