@@ -1,5 +1,6 @@
 (ns br.bsb.liberdade.baas.business
   (:require [br.bsb.liberdade.baas.utils :as utils]
+            [br.bsb.liberdade.baas.tar.decompress :as untar]
             [br.bsb.liberdade.baas.db :as db]))
 
 (def possible-app-roles ["admin" "contributor"])
@@ -463,6 +464,15 @@
         get-client-role-in-app-xf
 	update-action-xf
 	format-standard-xf)))
+
+(defn upload-actions [client-auth-key app-auth-key compressed-actions]
+  (-> {:client-id (-> client-auth-key utils/decode-secret :client_id)
+       :app-id (-> app-auth-key utils/decode-secret :app_id)
+       :compressed-actions compressed-actions
+       :error nil}
+      get-client-role-in-app-xf
+      utils/spy
+      format-standard-xf))
 
 (defn- maybe-download-action-xf [state]
   (if (or (-> state :error some?) (is-role-invalid? state))
