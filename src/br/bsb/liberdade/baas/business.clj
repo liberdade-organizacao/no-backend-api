@@ -454,16 +454,52 @@
 (defn update-action 
   [client-auth-key app-auth-key old-action-name new-action-name script]
   (let [client-id (-> client-auth-key utils/decode-secret :client_id)
-	app-id (-> app-auth-key utils/decode-secret :app_id)]
+        app-id (-> app-auth-key utils/decode-secret :app_id)]
     (-> {:client-id client-id
          :app-id app-id
-	 :old-action-name old-action-name
-	 :new-action-name new-action-name
-	 :script script
-	 :error nil}
+         :old-action-name old-action-name
+         :new-action-name new-action-name
+         :script script
+         :error nil}
         get-client-role-in-app-xf
-	update-action-xf
-	format-standard-xf)))
+        update-action-xf
+        format-standard-xf)))
+
+(defn- maybe-extract-actions-xf [state]
+  (if (-> state :error some?)
+    state
+    (assoc state
+           :actions
+           (-> state :compressed-actions untar/extract))))
+
+(defn- maybe-delete-existing-actions-xf [state]
+  (cond
+    (-> state :error some?)
+      state
+    (-> state :actions nil?)
+      (assoc state :error "Actions could not be decompressed")
+    :else
+      (let [params {"app_id" (:app-id state)}
+            result (db/run-operation "delete-all-app-actions.sql"
+                                     params)]
+       (assoc state
+              :error
+              (if (= 0 (count result)) "failed to delete actions" nil)))))
+
+(defn- maybe-upload-actions-xf [state]
+  (if (-> state :error some?)
+    state
+    (reduce (fn [s [action-name action-script]]
+              (let [params {"app_id" (:app-id s)
+                            "name" action-name
+                            "script" action-script}
+                    result (db/run-operation "upload-action.sql" 
+                                             params)]
+                (if (= 0 (count result))
+                  (assoc s :error "Failed to upload some actions")
+                  s)))
+            state
+            (:actions state))))
 
 (defn upload-actions [client-auth-key app-auth-key compressed-actions]
   (-> {:client-id (-> client-auth-key utils/decode-secret :client_id)
@@ -471,7 +507,9 @@
        :compressed-actions compressed-actions
        :error nil}
       get-client-role-in-app-xf
-      utils/spy
+      maybe-extract-actions-xf
+      maybe-delete-existing-actions-xf
+      maybe-upload-actions-xf
       format-standard-xf))
 
 (defn- maybe-download-action-xf [state]
