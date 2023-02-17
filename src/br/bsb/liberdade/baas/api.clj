@@ -10,7 +10,8 @@
             [selmer.parser :refer :all]
             [br.bsb.liberdade.baas.db :as db]
             [br.bsb.liberdade.baas.business :as biz]
-            [br.bsb.liberdade.baas.proxies :as proxies]))
+            [br.bsb.liberdade.baas.proxies :as proxies]
+            [br.bsb.liberdade.baas.tar.decompress :as untar]))
 
 ; #############
 ; # UTILITIES #
@@ -192,10 +193,10 @@
 (defn upload-actions [req]
   (let [client-auth-key (-> req :headers (get "x-client-auth-key"))
         app-auth-key (-> req :headers (get "x-app-auth-key"))
-	compressed-actions (-> req :body slurp)]
+        compressed-actions (-> req :body untar/slurp-bytes)]
     (boilerplate (biz/upload-actions client-auth-key 
-                                     app-auth-key 
-				     compressed-actions))))
+                                     app-auth-key
+                                     compressed-actions))))
 
 (defn download-action [req]
   (let [params (-> req :query-string url-search-params)

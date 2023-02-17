@@ -1,6 +1,7 @@
 (ns br.bsb.liberdade.baas.tar.decompress
-  (:require [clojure.java.io :as io]
-	    [clj-compress.core :as tar]))
+  (:require [clojure.string :as string]
+            [clojure.java.io :as io]
+            [clj-compress.core :as tar]))
 
 (defn- random-string [length]
   (loop [alphabet "abcdefghijklmnopqrstuvwxyz"
@@ -15,9 +16,9 @@
 (defn slurp-bytes
   "Slurp the bytes from a slurpable thing"
   [x]
-  (with-open [in (clojure.java.io/input-stream x)
+  (with-open [in (io/input-stream x)
               out (java.io.ByteArrayOutputStream.)]
-    (clojure.java.io/copy in out)
+    (io/copy in out)
     (.toByteArray out)))
 
 (defn spit-bytes [filename contents]
@@ -38,16 +39,20 @@
 (defn extract [raw-binary]
   (let [temp-id (random-string 7)
         temp-file-name (str "/tmp/" temp-id ".tar.gz")
-	temp-output-folder-name (str "/tmp/" temp-id ".d")]
+        temp-output-folder-name (str "/tmp/" temp-id ".d")]
     (try
       (let [_ (spit-bytes temp-file-name raw-binary)
-            _ (tar/decompress-archive temp-file-name temp-output-folder-name "gz")
-	    extracted-files (list-files temp-output-folder-name)
-	    result (->> extracted-files
-	                (map #(.getPath %))
-		        (reduce (fn [state file]
-		                  (assoc state file (slurp file)))
-		                {}))]
+            _ (tar/decompress-archive temp-file-name
+                                      temp-output-folder-name
+                                      "gz")
+            extracted-files (list-files temp-output-folder-name)
+            result (->> extracted-files
+	                      (map #(.getPath %))
+                        (reduce (fn [state file]
+                                  (assoc state
+                                         (-> file (string/split #"/") last)
+                                         (slurp file)))
+                                {}))]
         (-> temp-file-name io/file delete-file)
         (-> temp-output-folder-name io/file delete-file)
         result)
