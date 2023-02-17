@@ -331,5 +331,6 @@
       (run))
     (when (some #(= "to-recfile" %) args)
       (apply jobs/to-recfile (rest args)))
-    ))
+    (when (some #(= "from-recfile" %) args)
+      (apply jobs/from-recfile (rest args)))))
 
