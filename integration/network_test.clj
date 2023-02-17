@@ -377,11 +377,11 @@
 	    _ (rm compressed-file-name)
 
             ; admin tests
-	    ; result (create-admin "crisjr@pm.me" "qotsa")
-	    ; admin-auth-key (get result "auth_key" nil)
-	    ; _ (list-all-clients admin-auth-key)
-	    ; _ (list-all-apps admin-auth-key)
-	    ; _ (list-all-files admin-auth-key)
+	    result (create-admin "crisjr@pm.me" "qotsa")
+	    admin-auth-key (get result "auth_key" nil)
+	    _ (list-all-clients admin-auth-key)
+	    _ (list-all-apps admin-auth-key)
+	    _ (list-all-files admin-auth-key)
 
 	    ; strip down
             _ (delete-app auth-key app-auth-key)
