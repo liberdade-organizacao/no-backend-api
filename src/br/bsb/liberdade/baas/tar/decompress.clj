@@ -3,6 +3,8 @@
             [clojure.java.io :as io]
             [clj-compress.core :as tar]))
 
+(def tmpd (or (System/getenv "TEMP_FOLDER") "/tmp" ))
+
 (defn- random-string [length]
   (loop [alphabet "abcdefghijklmnopqrstuvwxyz"
          i 0
@@ -38,8 +40,8 @@
 
 (defn extract [raw-binary]
   (let [temp-id (random-string 7)
-        temp-file-name (str "/tmp/" temp-id ".tar.gz")
-        temp-output-folder-name (str "/tmp/" temp-id ".d")]
+        temp-file-name (str tmpd "/" temp-id ".tar.gz")
+        temp-output-folder-name (str tmpd "/" temp-id ".d")]
     (try
       (let [_ (spit-bytes temp-file-name raw-binary)
             _ (tar/decompress-archive temp-file-name
