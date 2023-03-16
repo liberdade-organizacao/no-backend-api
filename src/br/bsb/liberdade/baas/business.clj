@@ -480,11 +480,14 @@
       (assoc state :error "Actions could not be decompressed")
     :else
       (let [params {"app_id" (:app-id state)}
-            result (db/run-operation "delete-all-app-actions.sql"
-                                     params)]
+            listing-result (db/run-operation "list-actions.sql" params)
+            deletion-result (db/run-operation "delete-all-app-actions.sql"
+                                              params)]
        (assoc state
               :error
-              (if (= 0 (count result)) "failed to delete actions" nil)))))
+              (if (not= (count listing-result) (count deletion-result)) 
+	        "failed to delete actions"
+		nil)))))
 
 (defn- maybe-upload-actions-xf [state]
   (if (-> state :error some?)
