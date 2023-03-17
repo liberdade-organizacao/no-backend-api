@@ -49,3 +49,7 @@ export_database:
 import_database:
 	psql -h localhost -p 5434 -d baas -U liberdade -W < backup.sql
 
+.PHONY: file_size_job
+file_size_job:
+	gforth scripts/file_size.fs -e bye < files.rec
+
