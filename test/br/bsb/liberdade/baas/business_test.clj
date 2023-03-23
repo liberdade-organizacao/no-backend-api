@@ -519,7 +519,24 @@
   (testing "test if it's possible to upload and download app files"
     (db/setup-database)
     (db/run-migrations)
-    ()
+    (let [result (biz/new-client "app_file@html.com" "htmlsux" false)
+          client-auth-key (get result "auth_key" nil)
+          result (biz/new-app client-auth-key "app with files")
+          app-auth-key (get result "auth_key" nil)
+          filename "file.txt"
+          contents "contents"
+          result (biz/upload-app-file client-auth-key
+                                      app-auth-key
+                                      filename
+                                      contents)
+          upload-error (get result "error" nil)
+          result (biz/download-app-file client-auth-key
+                                        app-auth-key
+                                        filename)
+          downloaded-contents result]
+      (is (nil? upload-error))
+      (is (= contents downloaded-contents))
+      )
     (db/drop-database))
   (testing "downloading inexistent files"
     (db/setup-database)
