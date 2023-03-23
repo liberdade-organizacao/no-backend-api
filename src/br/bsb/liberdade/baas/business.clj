@@ -272,7 +272,6 @@
   (not (utils/in? possible-app-roles (:role state))))
 
 (defn- validate-role-xf [state]
-  (println state)
   (cond
     (-> state :error some?)
       state
