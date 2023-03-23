@@ -1,1 +1,2 @@
+DELETE FROM files WHERE owner_id IS NULL;
 ALTER TABLE files ALTER COLUMN owner_id SET NOT NULL;
