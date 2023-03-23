@@ -486,7 +486,7 @@
     (db/drop-database)))
 
 (deftest test-file-upload-and-download
-  (testing "test if it's possible to upload and download files"
+  (testing "test if it's possible to upload and download user files"
     (db/setup-database)
     (db/run-migrations)
     (let [result (biz/new-client "owner@example.net" "password" false)
@@ -515,6 +515,11 @@
       (is (nil? update-error))
       (is (= final-contents final-contents-again))
       (is (not= initial-contents-again final-contents-again)))
+    (db/drop-database))
+  (testing "test if it's possible to upload and download app files"
+    (db/setup-database)
+    (db/run-migrations)
+    ()
     (db/drop-database))
   (testing "downloading inexistent files"
     (db/setup-database)
