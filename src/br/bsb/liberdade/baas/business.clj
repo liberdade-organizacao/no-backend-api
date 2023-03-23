@@ -345,6 +345,12 @@
                nil
                "Failed to delete this file")}))
 
+(defn upload-app-file [client-auth-key app-auth-key filename contents]
+  {"error" "not implemented yet"})
+
+(defn download-app-file [client-auth-key app-auth-key filename]
+  "ERROR not implemented yet")
+
 (defn- maybe-list-app-files-xf [state]
   (cond (some? (:error state)) 
           state

@@ -155,6 +155,19 @@
         filename (-> req :headers (get "x-filename"))]
     (boilerplate (biz/delete-user-file user-auth-key filename))))
 
+(defn upload-app-file [req]
+  (let [client-auth-key (-> req :headers (get "x-client-auth-key"))
+        app-auth-key (-> req :headers (get "x-app-auth-key"))
+        filename (-> req :headers (get "x-filename"))
+	contents (-> req :body slurp)]
+    (boilerplate (biz/upload-app-file client-auth-key app-auth-key filename contents))))
+
+(defn download-app-file [req]
+  (let [client-auth-key nil
+        app-auth-key nil
+	]
+    (biz/download-app-file)))
+
 (defn list-app-files [req]
   (let [params (-> req :query-string url-search-params)
         client-auth-key (get params "client_auth_key")
@@ -285,6 +298,8 @@
   (GET "/users/files" [] download-user-file)
   (GET "/users/files/list" [] list-user-files)
   (DELETE "/users/files" [] delete-user-file)
+  (POST "/apps/files" [] upload-app-file)
+  (GET "/apps/files" [] download-app-file)
   (GET "/apps/files/list" [] list-app-files)
   (GET "/apps/clients" [] list-app-managers)
   (POST "/actions" [] upload-action)
