@@ -69,6 +69,9 @@
                                     "role" role})]
       state)))
 
+(defn- format-standard-xf [state]
+  {"error" (get state :error nil)})
+
 (defn- format-new-app-output-xf [state]
   {"error" (:error state)
    "auth_key" (when (some? (:app-id state))
@@ -366,16 +369,25 @@
         result (db/run-operation "list-user-files.sql" params)]
     result))
 
+(defn- maybe-delete-file-xf [state]
+  (if (-> state :error some?)
+    state
+    (let [filepath (:filepath state)
+          params {"filepath" filepath}
+	  result (db/run-operation "delete-file.sql" params)]
+      (assoc state :error (if (pos? (count result))
+                            nil
+			    "Failed to delete this file")))))
+
 (defn delete-user-file [user-auth-key filename]
   (let [user-info (utils/decode-secret user-auth-key)
         app-id (:app_id user-info)
         user-id (:user_id user-info)
-        filepath (new-file-path app-id user-id filename)
-        params {"filepath" filepath}
-        result (db/run-operation "delete-file.sql" params)]
-    {"error" (if (pos? (count result))
-               nil
-               "Failed to delete this file")}))
+        filepath (new-file-path app-id user-id filename)]
+    (-> {:filepath filepath
+         :error nil}
+        maybe-delete-file-xf
+	format-standard-xf)))
 
 (defn upload-app-file [client-auth-key app-auth-key filename contents]
   (let [client-id (-> client-auth-key utils/decode-secret :client_id)
@@ -400,6 +412,18 @@
         get-client-role-in-app-xf
         validate-role-xf
         maybe-download-file-xf)))
+
+(defn delete-app-file [client-auth-key app-auth-key filename]
+  (let [client-id (-> client-auth-key utils/decode-secret :client_id)
+        app-id (-> app-auth-key utils/decode-secret :app_id)]
+    (-> {:client-id client-id
+         :app-id app-id
+         :filepath (new-file-path app-id filename)
+         :error nil}
+        get-client-role-in-app-xf
+        validate-role-xf
+        maybe-delete-file-xf
+	format-standard-xf)))
 
 (defn- maybe-list-app-files-xf [state]
   (cond (some? (:error state)) 
@@ -473,9 +497,6 @@
 		    "script" script}
 	    result (db/run-operation "upload-action.sql" params)]
         (assoc state :error (when (= 0 (count result)) "Failed to upload script")))))
-
-(defn- format-standard-xf [state]
-  {"error" (get state :error nil)})
 
 (defn upsert-action [client-auth-key app-auth-key action-name script]
   (let [client-id (-> client-auth-key utils/decode-secret :client_id)
