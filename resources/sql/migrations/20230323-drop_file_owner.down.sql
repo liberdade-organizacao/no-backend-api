@@ -1,0 +1,1 @@
+ALTER TABLE files ALTER COLUMN owner_id SET NOT NULL;
