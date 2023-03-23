@@ -533,10 +533,20 @@
           result (biz/download-app-file client-auth-key
                                         app-auth-key
                                         filename)
-          downloaded-contents result]
+      
+          downloaded-contents result
+	  result (biz/delete-app-file client-auth-key
+	                              app-auth-key
+				      filename)
+	  deletion-error (get result "error" nil)
+	  result (biz/download-app-file client-auth-key
+	                                app-auth-key
+					filename)
+	  not-downloaded-contents result]
       (is (nil? upload-error))
       (is (= contents downloaded-contents))
-      )
+      (is (nil? deletion-error))
+      (is (nil? not-downloaded-contents)))
     (db/drop-database))
   (testing "downloading inexistent files"
     (db/setup-database)
