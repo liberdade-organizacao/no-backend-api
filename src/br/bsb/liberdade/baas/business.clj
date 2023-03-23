@@ -271,6 +271,16 @@
 (defn- is-role-invalid? [state]
   (not (utils/in? possible-app-roles (:role state))))
 
+(defn- validate-role-xf [state]
+  (println state)
+  (cond
+    (-> state :error some?)
+      state
+    (-> state :role nil?)
+      state
+    :else
+      (assoc state :error (when (is-role-invalid? state) "Invalid role"))))
+
 (defn- list-app-users-xf [state]
   (cond
     (-> state :error some?)
@@ -297,33 +307,56 @@
        list-app-users-xf
        format-list-app-users-output-xf))
 
-(defn- new-file-path [app-id user-id filename]
-  (str "a" app-id "/u" user-id "/" filename))
+(defn- new-file-path 
+  ([app-id user-id filename]
+    (str "a" app-id "/u" user-id "/" filename))
+  ([app-id filename]
+    (str "a" app-id "/" filename)))
+
+(defn- maybe-upload-file-xf [state]
+  (if (-> state :error some?)
+    {"error" (:error state)}
+    (let [app-id (:app-id state)
+          user-id (get state :user-id "NULL")
+          filename (:filename state)
+          filepath (:filepath state)
+          contents (-> (:contents state)
+                       utils/encode-data)
+          params {"app_id" app-id
+                  "user_id" user-id
+                  "filename" filename
+                  "filepath" filepath
+                  "contents" contents}
+          result (db/run-operation "upload-file.sql" params)]
+      {"error" (when (= 0 (count result)) "Failed to upload file")})))
 
 (defn upload-user-file [user-auth-key filename contents]
   (let [user-info (utils/decode-secret user-auth-key)
         app-id (:app_id user-info)
-        user-id (:user_id user-info)
-        filepath (new-file-path app-id user-id filename)
-        params {"app_id" app-id
-                "user_id" user-id
-                "filename" filename
-                "filepath" filepath
-                "contents" (utils/encode-data contents)}
-        result (db/run-operation "upload-file.sql" params)]
-    {"error" (when (= 0 (count result)) "Failed to upload file")}))
+        user-id (:user_id user-info)]
+    (-> {:error nil
+         :app-id app-id
+         :user-id user-id
+         :filename filename
+         :filepath (new-file-path app-id user-id filename)
+         :contents contents}
+        maybe-upload-file-xf)))
+
+(defn- maybe-download-file-xf [state]
+  (if (-> state :error some?)
+    nil
+    (let [params {"filepath" (:filepath state)}
+          result (db/run-operation-first "download-file.sql" params)
+          contents (:contents result)]
+      (when (some? contents)
+        (utils/decode-data contents)))))
 
 (defn download-user-file [user-auth-key filename]
   (let [user-info (utils/decode-secret user-auth-key)
         app-id (:app_id user-info)
         user-id (:user_id user-info)
-        filepath (new-file-path app-id user-id filename)
-        params {"filepath" filepath}
-        result (db/run-operation-first "download-file.sql" params)
-        contents (:contents result)]
-    (if (some? contents)
-      (utils/decode-data contents)
-      nil)))
+        filepath (new-file-path app-id user-id filename)]
+    (maybe-download-file-xf {:filepath filepath})))
 
 (defn list-user-files [user-auth-key]
   (let [user-info (utils/decode-secret user-auth-key)
@@ -346,10 +379,28 @@
                "Failed to delete this file")}))
 
 (defn upload-app-file [client-auth-key app-auth-key filename contents]
-  {"error" "not implemented yet"})
+  (let [client-id (-> client-auth-key utils/decode-secret :client_id)
+        app-id (-> app-auth-key utils/decode-secret :app_id)]
+    (-> {:client-id client-id
+         :app-id app-id
+         :filename filename
+         :filepath (new-file-path app-id filename)
+         :contents contents
+         :error nil}
+        get-client-role-in-app-xf
+        validate-role-xf
+        maybe-upload-file-xf)))
 
 (defn download-app-file [client-auth-key app-auth-key filename]
-  "ERROR not implemented yet")
+  (let [client-id (-> client-auth-key utils/decode-secret :client_id)
+        app-id (-> app-auth-key utils/decode-secret :app_id)]
+    (-> {:client-id client-id
+         :app-id app-id
+         :filepath (new-file-path app-id filename)
+         :error nil}
+        get-client-role-in-app-xf
+        validate-role-xf
+        maybe-download-file-xf)))
 
 (defn- maybe-list-app-files-xf [state]
   (cond (some? (:error state)) 
