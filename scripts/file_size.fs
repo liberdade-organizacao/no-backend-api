@@ -2,21 +2,20 @@
 4 constant ascii_eot
 10 constant line_feed
 58 constant ascii_colon
-variable rec_key
 variable reached?
 variable temp
-
-( memory should be allocated before running everything! )
+variable rec_key
 rec_key key_length cells allot
-false reached? !
 
 : read_key
 	0
 	begin
 		dup
 		key dup rot cells rec_key + !
-		swap 1 + dup rot
-	ascii_colon = swap key_length >= or until
+		swap 1 + dup rot dup
+	ascii_colon = swap
+	ascii_eot = or swap
+	key_length >= or until
 	drop
 ;
 
@@ -44,11 +43,11 @@ false reached? !
 	1 cells rec_key + @ 111 = \ o
 	2 cells rec_key + @ 110 = \ n
 	3 cells rec_key + @ 116 = \ t
-	4 cells rec_key + @ 105 = \ e
+	4 cells rec_key + @ 101 = \ e
 	5 cells rec_key + @ 110 = \ n
 	6 cells rec_key + @ 116 = \ t
 	7 cells rec_key + @ 115 = \ s
-	and and and and and and and and
+	and and and and and and and
 ;
 
 : skip_line 
@@ -64,14 +63,21 @@ false reached? !
 	ascii_colon = until
 ;
 
-: write_value
+: bypass_key key dup emit ;
+
+: write_value begin bypass_key line_feed = until ;
+
+: handle_content
+	key emit  \ reading the space before the contents
+	-1  \ already counting the line feed that will eventually come
 	begin
-		key dup
-		emit
+		1 +
+		bypass_key
 	line_feed = until
+	." file_size: " . cr
 ;
 
-: end_reached?
+: is_end_reached?
 	false reached? !
 	key_length 0 do
 		rec_key i cells + @
@@ -82,39 +88,41 @@ false reached? !
 	reached? @
 ;
 
-( ######## )
-( # MAIN # )
-( ######## )
-: setup
+: clear_memory
 	key_length 0 do
 		0 rec_key i cells + !
 	loop
 ;
 
+
+( ######## )
+( # MAIN # )
+( ######## )
+: setup
+	clear_memory
+;
+
 : draw
-	setup
+	clear_memory
 	read_key
-	is_rec_key_file_size? if
+	is_end_reached? if
+		cr
+	else is_rec_key_file_size? if
 		skip_line
 	else is_rec_key_contents? if
-		( TODO write rec key )
-		( TODO count contents length )
-		( write_key )
-		\ write_value
-		skip_line
+		write_key
+		handle_content
 	else
-		( TODO write key )
-		( TODO write value )
 		write_key
 		write_value
-	then then
+	then then then
 ;
 
 : main
 	setup
 	begin
 		draw
-	end_reached? until
+	is_end_reached? until
 ;
 
 main
