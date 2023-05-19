@@ -754,6 +754,7 @@
     (let [result (biz/new-client "admin@liberdade.bsb.br" "senha" true)
           admin-auth-key (get result "auth_key" nil)
           result (biz/list-all-clients admin-auth-key)
+	  app-creation-error (biz/new-app admin-auth-key "random app")
           all-clients (get result "clients" nil)
           clients-error (get result "error" nil)
           result (biz/list-all-apps admin-auth-key)
@@ -768,6 +769,8 @@
       (is (some? all-clients))
       (is (nil? clients-error))
       (is (some? all-apps))
+      ; JOE XXX complete me!
+      (is (pos? (count all-apps)))
       (is (nil? apps-error))
       (is (some? all-files))
       (is (nil? files-error))
