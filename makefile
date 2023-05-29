@@ -53,3 +53,8 @@ import_database:
 file_size_job:
 	gforth scripts/file_size.fs -e bye < files.rec
 
+.PHONY: native
+native: build
+	native-image -jar ./target/uberjar/br.bsb.liberdade.baas.api.jar \
+	             -H:Name=./target/baas
+

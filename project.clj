@@ -14,10 +14,10 @@
                  [jumblerg/ring-cors "2.0.0"]
                  [com.github.seancorfield/next.jdbc "1.2.753"]
                  [org.postgresql/postgresql "42.2.10"]
-		 [middlesphere/clj-compress "0.1.0"]
-		 [clj-http "3.12.3"]]
+                 [middlesphere/clj-compress "0.1.0"]
+                 [clj-http "3.12.3"]]
   :min-lein-version "2.9.8"
-  :main ^:skip-aot br.bsb.liberdade.baas.api
+  :main br.bsb.liberdade.baas.api
   :target-path "target/%s"
   :profiles {:uberjar {:aot :all
                        :uberjar-name "br.bsb.liberdade.baas.api.jar"

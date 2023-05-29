@@ -8,6 +8,7 @@ Requirements:
 - Leiningen
 - PostgreSQL
 - Docker (optional for development)
+- [GraalVM](https://github.com/clj-easy/graalvm-clojure/blob/master/doc/clojure-graalvm-native-binary.md) (optional for deployment)
 
 The following repositories are expected to work with this one as well:
 - [Scripting Engine](https://github.com/liberdade-organizacao/no-backend-scripting-engine)
