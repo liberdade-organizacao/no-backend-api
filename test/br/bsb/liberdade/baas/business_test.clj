@@ -755,6 +755,13 @@
           admin-auth-key (get result "auth_key" nil)
           result (biz/list-all-clients admin-auth-key)
 	  app-creation-error (biz/new-app admin-auth-key "random app")
+	  app-auth-key (get app-creation-error "auth_key" nil)
+	  user-creation-result (biz/new-user app-auth-key "user@example.net" "yeah yeah")
+          user-auth-key (get user-creation-result "auth_key" nil)
+          contents (slurp "resources/pokemon.jpg")
+          _ (biz/upload-user-file user-auth-key 
+                                  "pokemon.jpg"
+                                  contents)
           all-clients (get result "clients" nil)
           clients-error (get result "error" nil)
           result (biz/list-all-apps admin-auth-key)
@@ -769,10 +776,10 @@
       (is (some? all-clients))
       (is (nil? clients-error))
       (is (some? all-apps))
-      ; JOE XXX complete me!
       (is (pos? (count all-apps)))
       (is (nil? apps-error))
       (is (some? all-files))
+      (is (pos? (count all-files)))
       (is (nil? files-error))
       (is (some? all-admins))
       (is (nil? admins-error)))
