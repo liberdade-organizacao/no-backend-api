@@ -6,8 +6,8 @@ SELECT
   f.last_updated_at,
   f.app_id,
   f.owner_id,
-  a.name,
-  c.email
+  a.name AS app_name,
+  c.email AS client_email
 FROM
   files f,
   apps a,
