@@ -25,6 +25,17 @@ integration-test:
 build: test
 	lein uberjar
 
+.PHONY: docker-build
+docker-build:  # build
+	docker build -t baas-api . 
+
+.PHONY: docker-run
+docker-run: docker-build
+	docker run -p 127.0.0.1:7780:7780 baas-api
+
+.PHONY: docker
+docker: docker-run
+
 .PHONY: install
 install: build
 	echo "Complete me! Run the jarfile"
