@@ -14,6 +14,8 @@ services:
     build: .
     ports:
       - "7780:7780"
+    env_file:
+      - .env
 
 volumes:
   db-data:
