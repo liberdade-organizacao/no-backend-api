@@ -25,6 +25,7 @@ parameters.
 Setup the database:
 
 ```
+docker-compose up -d db
 lein run migrate-up
 ```
 
@@ -32,6 +33,12 @@ And finally execute the application:
 
 ```
 lein run up
+```
+
+The whole system can be run with Docker Compose:
+
+```
+docker-compose up
 ```
 
 ## Usage
