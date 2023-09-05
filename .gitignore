@@ -1,7 +1,7 @@
 #################
 # PROJECT FILES #
 #################
-resources/.env
+.env
 
 ###########
 # CLOJURE #

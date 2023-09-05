@@ -16,11 +16,11 @@ The following repositories are expected to work with this one as well:
 First, ensure the environment variables are properly set up:
 
 ```
-source resources/.env
+cp .env.example .env
+source .env
 ```
 
-Check [the example ENV file](./resources/.env.example) for the required
-parameters.
+Check [the example ENV file](./.env.example) for the required parameters.
 
 Setup the database:
 
