@@ -38,6 +38,7 @@ lein run up
 The whole system can be run with Docker Compose:
 
 ```
+lein uberjar
 docker-compose up
 ```
 
@@ -48,6 +49,4 @@ To run tests:
 ``` sh
 lein test
 ```
-
-For a feature overview, check the [routes documentation](./docs/routes.md)
 
