@@ -22,7 +22,7 @@ integration-test:
 	lsof -i tcp:$(PORT) | grep -v PID | awk '{print $$2}' | xargs kill
 
 .PHONY: build
-build: test
+build:
 	lein uberjar
 
 .PHONY: docker-build
@@ -63,4 +63,16 @@ import_database:
 .PHONY: file_size_job
 file_size_job:
 	gforth scripts/file_size.fs -e bye < files.rec
+
+.PHONY: pack
+pack: build
+	rm -f baas.api.tar.gz
+	rm -rf build
+	mkdir build
+	cp -r resources build
+	cp target/uberjar/br.bsb.liberdade.baas.api.jar build
+	cp .env build
+	cd build; tar -cvzf baas.api.tar.gz .
+	mv build/baas.api.tar.gz .
+	rm -r build
 

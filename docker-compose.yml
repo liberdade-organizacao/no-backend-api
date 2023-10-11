@@ -10,13 +10,21 @@ services:
       - POSTGRES_DB=baas
       - POSTGRES_USER=liberdade
       - POSTGRES_PASSWORD=password
+    networks:
+      - baas
   baas-api:
     build: .
     ports:
       - "7780:7780"
     env_file:
       - .env
+    networks:
+      - baas
 
 volumes:
   db-data:
+
+networks:
+  baas:
+    driver: bridge
 
