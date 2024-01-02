@@ -671,6 +671,33 @@
       (is (nil? random-managers)))
     (db/drop-database)))
 
+(deftest revoke-manager-access-to-app
+  (testing "clients can revoke access of other clients from their apps"
+    (db/setup-database)
+    (db/run-migrations)
+    (let [result (biz/new-client "admin@liberdade.bsb.br" "pwd" false)
+          owner-auth-key (get result "auth_key" nil)
+          client-email "client@liberdade.bsb.br"
+          result (biz/new-client client-email "pwd2" false)
+          client-auth-key (get result "auth_key" nil)
+          result (biz/new-app owner-auth-key "revoke managers app")
+          app-auth-key (get result "auth_key" nil)
+          result (biz/invite-to-app-by-email owner-auth-key app-auth-key client-email "admin")
+          invitation-error (get result "error" nil)
+          result (biz/get-client-role-in-app client-auth-key app-auth-key)
+          was-admin-before (-> result :role (= "admin"))
+          result (biz/revoke-admin-access owner-auth-key
+                                          app-auth-key
+                                          client-email)
+          removal-error (get result "error" nil)
+          result (biz/get-client-role-in-app client-auth-key app-auth-key)
+          is-admin-after (-> result :role (= "admin"))]
+      (is (nil? invitation-error))
+      (is (true? was-admin-before))
+      (is (nil? removal-error))
+      (is (false? is-admin-after)))
+    (db/drop-database)))
+ 
 (def action-script-A "
   function main(param)
     print(\"hi\")

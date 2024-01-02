@@ -113,6 +113,14 @@
                                             "app_id" app-id})]
         (assoc state :role (:role result)))))
 
+(defn get-client-role-in-app [client-auth-key app-auth-key]
+  (get-client-role-in-app-xf {:client-id (-> client-auth-key
+                                             utils/decode-secret
+                                             :client_id)
+                              :app-id (-> app-auth-key
+                                          utils/decode-secret
+                                          :app_id)}))
+
 (defn- maybe-delete-app-xf [state]
   (cond (some? (:error state))
           state
@@ -481,6 +489,31 @@
        get-client-role-in-app-xf
        list-app-managers-xf
        format-list-app-managers-output-xf))
+
+(defn- maybe-revoke-manager-xf [state]
+  (cond
+    (-> state :error some?)
+      state
+    (-> state :role (not= "admin"))
+      (assoc state :error "not allowed")
+    :else
+      (let [params {"app_id" (:app-id state)
+                    "revoked_email" (:email-to-revoke state)}
+            result (db/run-operation "revoke-manager.sql" params)]
+        (assoc state :result result))))
+
+; TODO expose this function on the API
+(defn revoke-admin-access [client-auth-key app-auth-key email-to-revoke]
+  (->> {:error nil
+        :client-id (-> client-auth-key
+                       utils/decode-secret
+                       :client_id)
+        :app-id (-> app-auth-key
+                    utils/decode-secret
+                    :app_id)
+        :email-to-revoke email-to-revoke}
+       get-client-role-in-app-xf
+       maybe-revoke-manager-xf))
 
 (defn- maybe-upload-action-xf [state]
   (cond 
