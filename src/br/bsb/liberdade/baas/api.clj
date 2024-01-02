@@ -187,6 +187,15 @@
         app-auth-key (get params "app_auth_key" nil)]
     (boilerplate (biz/list-app-managers client-auth-key app-auth-key))))
 
+(defn revoke-app-manager [req]
+  (let [params (-> req :body slurp json/read-str)
+        client-auth-key (get params "client_auth_key" nil)
+        app-auth-key (get params "app_auth_key" nil)
+        email-to-revoke (get params "email_to_revoke" nil)]
+    (boilerplate (biz/revoke-admin-access client-auth-key
+                                          app-auth-key
+                                          email-to-revoke))))
+
 (defn upload-action [req]
   (let [params (-> req :body slurp json/read-str)
         client-auth-key (get params "client_auth_key" nil)
@@ -310,6 +319,7 @@
   (DELETE "/apps/files" [] delete-app-file)
   (GET "/apps/files/list" [] list-app-files)
   (GET "/apps/clients" [] list-app-managers)
+  (POST "/apps/clients/revoke" [] revoke-app-manager)
   (POST "/actions" [] upload-action)
   (PATCH "/actions" [] update-action)
   (POST "/actions/bulk" [] upload-actions)

@@ -502,7 +502,6 @@
             result (db/run-operation "revoke-manager.sql" params)]
         (assoc state :result result))))
 
-; TODO expose this function on the API
 (defn revoke-admin-access [client-auth-key app-auth-key email-to-revoke]
   (->> {:error nil
         :client-id (-> client-auth-key
@@ -513,7 +512,8 @@
                     :app_id)
         :email-to-revoke email-to-revoke}
        get-client-role-in-app-xf
-       maybe-revoke-manager-xf))
+       maybe-revoke-manager-xf
+       format-standard-xf))
 
 (defn- maybe-upload-action-xf [state]
   (cond 
