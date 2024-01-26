@@ -64,3 +64,7 @@ import_database:
 file_size_job:
 	gforth scripts/file_size.fs -e bye < files.rec
 
+.PHONY: lint
+lint:
+	cljfmt fix
+

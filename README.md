@@ -8,6 +8,7 @@ Requirements:
 - Leiningen
 - PostgreSQL
 - Docker (optional for development)
+- [cljfmt](https://github.com/weavejester/cljfmt) (optional for development)
 
 The following repositories are expected to work with this one as well:
 - [Scripting Engine](https://github.com/liberdade-organizacao/no-backend-scripting-engine)
