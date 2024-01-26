@@ -1,4 +1,4 @@
-PORT=7780
+API_PORT=7780
 
 .PHONY: default
 default: build
@@ -18,8 +18,8 @@ integration-test:
 	cd integration
 	bb network_test.clj
 	cd ..
-	# fuser -k $(PORT)/tcp
-	lsof -i tcp:$(PORT) | grep -v PID | awk '{print $$2}' | xargs kill
+	# fuser -k $(API_PORT)/tcp
+	lsof -i tcp:$(API_PORT) | grep -v PID | awk '{print $$2}' | xargs kill
 
 .PHONY: build
 build: test
