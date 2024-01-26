@@ -116,7 +116,7 @@
 (defn delete-user [req]
   (let [params (-> req :body slurp json/read-str)
         user-auth-key (get params "user_auth_key" nil)
-   	password (get params "password" nil)]
+        password (get params "password" nil)]
     (boilerplate (biz/delete-user user-auth-key password))))
 
 (defn update-user-password [req]
@@ -178,7 +178,7 @@
 (defn list-app-files [req]
   (let [params (-> req :query-string url-search-params)
         client-auth-key (get params "client_auth_key")
-	app-auth-key (get params "app_auth_key")]
+        app-auth-key (get params "app_auth_key")]
     (boilerplate (biz/list-app-files client-auth-key app-auth-key))))
 
 (defn list-app-managers [req]
@@ -199,56 +199,56 @@
 (defn upload-action [req]
   (let [params (-> req :body slurp json/read-str)
         client-auth-key (get params "client_auth_key" nil)
-	app-auth-key (get params "app_auth_key" nil)
-	action-name (get params "action_name" nil)
-	action-script (get params "action_script" nil)]
-    (boilerplate (biz/upsert-action client-auth-key 
-                                    app-auth-key 
-				    action-name 
-				    action-script))))
+        app-auth-key (get params "app_auth_key" nil)
+        action-name (get params "action_name" nil)
+        action-script (get params "action_script" nil)]
+    (boilerplate (biz/upsert-action client-auth-key
+                                    app-auth-key
+                                    action-name
+                                    action-script))))
 
 (defn update-action [req]
   (let [params (-> req :body slurp json/read-str)
         client-auth-key (get params "client_auth_key" nil)
-	app-auth-key (get params "app_auth_key" nil)
-	old-action-name (get params "old_action_name" nil)
-	new-action-name (get params "new_action_name" nil)
-	action-script (get params "action_script" nil)]
-    (boilerplate (biz/update-action client-auth-key 
-                                    app-auth-key 
-				    old-action-name
-				    new-action-name
-				    action-script))))
+        app-auth-key (get params "app_auth_key" nil)
+        old-action-name (get params "old_action_name" nil)
+        new-action-name (get params "new_action_name" nil)
+        action-script (get params "action_script" nil)]
+    (boilerplate (biz/update-action client-auth-key
+                                    app-auth-key
+                                    old-action-name
+                                    new-action-name
+                                    action-script))))
 
 (defn upload-actions [req]
   (let [client-auth-key (-> req :headers (get "x-client-auth-key"))
         app-auth-key (-> req :headers (get "x-app-auth-key"))
         compressed-actions (-> req :body untar/slurp-bytes)]
-    (boilerplate (biz/upload-actions client-auth-key 
+    (boilerplate (biz/upload-actions client-auth-key
                                      app-auth-key
                                      compressed-actions))))
 
 (defn download-action [req]
   (let [params (-> req :query-string url-search-params)
         client-auth-key (get params "client_auth_key" nil)
-	app-auth-key (get params "app_auth_key" nil)
-	action-name (get params "action_name" nil)]
+        app-auth-key (get params "app_auth_key" nil)
+        action-name (get params "action_name" nil)]
     (biz/read-action client-auth-key app-auth-key action-name)))
 
 (defn list-actions [req]
   (let [params (-> req :query-string url-search-params)
         client-auth-key (get params "client_auth_key" nil)
-	app-auth-key (get params "app_auth_key" nil)]
+        app-auth-key (get params "app_auth_key" nil)]
     (boilerplate (biz/list-actions client-auth-key app-auth-key))))
 
 (defn delete-action [req]
   (let [params (-> req :body slurp json/read-str)
         client-auth-key (get params "client_auth_key" nil)
-	app-auth-key (get params "app_auth_key" nil)
-	action-name (get params "action_name" nil)]
-    (boilerplate (biz/delete-action client-auth-key 
-                                    app-auth-key 
-				    action-name))))
+        app-auth-key (get params "app_auth_key" nil)
+        action-name (get params "action_name" nil)]
+    (boilerplate (biz/delete-action client-auth-key
+                                    app-auth-key
+                                    action-name))))
 
 (defn run-action [req]
   (let [params (-> req :body slurp json/read-str)
@@ -256,8 +256,8 @@
         app-auth-key (get params "app_auth_key" nil)
         action-name (get params "action_name" nil)
         action-param (get params "action_param" nil)]
-    (boilerplate (proxies/run-action user-auth-key 
-                                     app-auth-key 
+    (boilerplate (proxies/run-action user-auth-key
+                                     app-auth-key
                                      action-name
                                      action-param))))
 
@@ -289,7 +289,7 @@
 (defn demote-admin [req]
   (let [params (-> req :body slurp json/read-str)
         auth-key (get params "auth_key" nil)
-	      email (get params "email" nil)]
+        email (get params "email" nil)]
     (boilerplate (biz/demote-admin auth-key email))))
 
 (defn check-admin [req]
@@ -352,7 +352,6 @@
   (let [port (Integer/parseInt (or (System/getenv "API_PORT") "7780"))]
     (server/run-server (wrap-cors #'app-routes #".*" (assoc site-defaults :security nil)) {:port port})
     (println (str "Listening at http://localhost:" port "/"))))
-
 
 (defn -main [& args]
   (do

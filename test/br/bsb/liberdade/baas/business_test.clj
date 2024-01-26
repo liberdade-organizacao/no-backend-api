@@ -146,7 +146,7 @@
           client-auth-key (get result "auth_key" nil)
           result (biz/new-app owner-auth-key "invite test app")
           app-auth-key (get result "auth_key" nil)
-          result (biz/invite-to-app-by-email owner-auth-key 
+          result (biz/invite-to-app-by-email owner-auth-key
                                              app-auth-key
                                              invitee-email
                                              "contributor")
@@ -167,9 +167,9 @@
           invited-contrib-email "invited_contributor@example.net"
           result (biz/new-client invited-contrib-email "pwd2" false)
           invited-contrib-auth-key (get result "auth_key" nil)
-          result(biz/new-app owner-auth-key "invitation test app")
+          result (biz/new-app owner-auth-key "invitation test app")
           app-auth-key (get result "auth_key" nil)
-          result (biz/invite-to-app-by-email owner-auth-key 
+          result (biz/invite-to-app-by-email owner-auth-key
                                              app-auth-key
                                              invited-admin-email
                                              "admin")
@@ -211,9 +211,9 @@
           invited-contrib-email "invited_contributor@example.net"
           result (biz/new-client invited-contrib-email "pwd2" false)
           invited-contrib-auth-key (get result "auth_key" nil)
-          result(biz/new-app owner-auth-key "invitation test app")
+          result (biz/new-app owner-auth-key "invitation test app")
           app-auth-key (get result "auth_key" nil)
-          result (biz/invite-to-app-by-email owner-auth-key 
+          result (biz/invite-to-app-by-email owner-auth-key
                                              app-auth-key
                                              invited-admin-email
                                              "contributor")
@@ -236,27 +236,27 @@
     (let [revoker-email "revoker@pm.me"
           result (biz/new-client "revoker@pm.me" "pwd" false)
           revoker-auth-key (get result "auth_key" nil)
-	  revokee-email "revokee@gmail.com"
-	  result (biz/new-client revokee-email "pwd2" false)
-	  revokee-auth-key (get result "auth_key" nil)
-	  result (biz/new-app revokee-auth-key "revoking people")
-	  app-auth-key (get result "auth_key" nil)
-	  result (biz/invite-to-app-by-email revokee-auth-key
-	                                     app-auth-key
-					     revoker-email
-					     "admin")
-	  first-invitation-error (get result "error" nil)
-	  result (biz/revoke-from-app-by-email revoker-auth-key
-	                                       app-auth-key
-					       revokee-email)
+          revokee-email "revokee@gmail.com"
+          result (biz/new-client revokee-email "pwd2" false)
+          revokee-auth-key (get result "auth_key" nil)
+          result (biz/new-app revokee-auth-key "revoking people")
+          app-auth-key (get result "auth_key" nil)
+          result (biz/invite-to-app-by-email revokee-auth-key
+                                             app-auth-key
+                                             revoker-email
+                                             "admin")
+          first-invitation-error (get result "error" nil)
+          result (biz/revoke-from-app-by-email revoker-auth-key
+                                               app-auth-key
+                                               revokee-email)
           revocation-error (get result "error" nil)
-	  result (biz/invite-to-app-by-email revokee-auth-key
-	                                     app-auth-key
-					     revoker-email
-					     "contributor")
-	  second-invitation-error (get result "error" nil)
+          result (biz/invite-to-app-by-email revokee-auth-key
+                                             app-auth-key
+                                             revoker-email
+                                             "contributor")
+          second-invitation-error (get result "error" nil)
           result (biz/get-clients-apps revokee-auth-key)
-	  invokee-apps (get result "apps" nil)]
+          invokee-apps (get result "apps" nil)]
       (is (nil? first-invitation-error))
       (is (nil? revocation-error))
       (is (some? second-invitation-error))
@@ -382,17 +382,17 @@
     (db/run-migrations)
     (let [result (biz/new-client "owner@liberdade.bsb.br" "passwordy" false)
           client-auth-key (get result "auth_key" nil)
-	  result (biz/new-app client-auth-key "change user password  app")
-	  app-auth-key (get result "auth_key" nil)
-	  user-email "user@liberdade.bsb.br"
-	  old-password "passwordsAREnice"
-	  new-password "but passphrases are better"
-	  result (biz/new-user app-auth-key user-email old-password)
-	  user-auth-key (get result "auth_key" nil)
-	  result (biz/update-user-password user-auth-key old-password new-password)
-	  error (get result "error" nil)
-	  result (biz/auth-user app-auth-key user-email new-password)
-	  user-auth-key-again (get result "auth_key" nil)]
+          result (biz/new-app client-auth-key "change user password  app")
+          app-auth-key (get result "auth_key" nil)
+          user-email "user@liberdade.bsb.br"
+          old-password "passwordsAREnice"
+          new-password "but passphrases are better"
+          result (biz/new-user app-auth-key user-email old-password)
+          user-auth-key (get result "auth_key" nil)
+          result (biz/update-user-password user-auth-key old-password new-password)
+          error (get result "error" nil)
+          result (biz/auth-user app-auth-key user-email new-password)
+          user-auth-key-again (get result "auth_key" nil)]
       (is (nil? error))
       (is (= user-auth-key user-auth-key-again)))
     (db/drop-database))
@@ -440,17 +440,17 @@
     (db/run-migrations)
     (let [result (biz/new-client "owner@example.net" "password" false)
           client-auth-key (get result "auth_key" nil)
-    	  result (biz/new-app client-auth-key "first test app")
-	      app-auth-key (get result "auth_key" nil)
-    	  user-email "coolguy@hotmail.com"
-    	  user-password "cool guy yo"
-    	  wrong-password "wrong password"
-    	  result (biz/new-user app-auth-key user-email user-password)
-    	  first-user-auth-key (get result "auth_key" nil)
-    	  first-error (get result "error" nil)
-    	  result (biz/auth-user app-auth-key user-email wrong-password)
-    	  second-user-auth-key (get result "auth_key" nil)
-    	  second-error (get result "error" nil)]
+          result (biz/new-app client-auth-key "first test app")
+          app-auth-key (get result "auth_key" nil)
+          user-email "coolguy@hotmail.com"
+          user-password "cool guy yo"
+          wrong-password "wrong password"
+          result (biz/new-user app-auth-key user-email user-password)
+          first-user-auth-key (get result "auth_key" nil)
+          first-error (get result "error" nil)
+          result (biz/auth-user app-auth-key user-email wrong-password)
+          second-user-auth-key (get result "auth_key" nil)
+          second-error (get result "error" nil)]
       (is (some? first-user-auth-key))
       (is (nil? first-error))
       (is (nil? second-user-auth-key))
@@ -461,21 +461,21 @@
     (db/run-migrations)
     (let [result (biz/new-client "owner@example.net" "password" false)
           client-auth-key (get result "auth_key" nil)
-     	  result (biz/new-app client-auth-key "first test app")
-    	  app-auth-key (get result "auth_key" nil)
-    	  user-email "coolguy@hotmail.com"
-    	  user-password "cool guy yo"
-    	  result (biz/new-user app-auth-key user-email user-password)
-    	  first-user-auth-key (get result "auth_key" nil)
-    	  first-error (get result "error" nil)
-    	  result (biz/auth-user app-auth-key user-email user-password)
-    	  second-user-auth-key (get result "auth_key" nil)
-    	  second-error (get result "error" nil)
-    	  result (biz/delete-user second-user-auth-key user-password)
-    	  deletion-error (get result "error" nil)
-    	  result (biz/auth-user app-auth-key user-email user-password)
-    	  third-user-auth-key (get result "auth_key" nil)
-    	  third-error (get result "error" nil)]
+          result (biz/new-app client-auth-key "first test app")
+          app-auth-key (get result "auth_key" nil)
+          user-email "coolguy@hotmail.com"
+          user-password "cool guy yo"
+          result (biz/new-user app-auth-key user-email user-password)
+          first-user-auth-key (get result "auth_key" nil)
+          first-error (get result "error" nil)
+          result (biz/auth-user app-auth-key user-email user-password)
+          second-user-auth-key (get result "auth_key" nil)
+          second-error (get result "error" nil)
+          result (biz/delete-user second-user-auth-key user-password)
+          deletion-error (get result "error" nil)
+          result (biz/auth-user app-auth-key user-email user-password)
+          third-user-auth-key (get result "auth_key" nil)
+          third-error (get result "error" nil)]
       (is (some? first-user-auth-key))
       (is (nil? first-error))
       (is (some? second-user-auth-key))
@@ -497,11 +497,11 @@
           user-auth-key (get result "auth_key" nil)
           filename "photo.jpg"
           initial-contents (slurp "resources/pokemon.jpg")
-          result (biz/upload-user-file user-auth-key 
-                                       filename 
+          result (biz/upload-user-file user-auth-key
+                                       filename
                                        initial-contents)
           upload-error (get result "error" nil)
-          initial-contents-again (biz/download-user-file user-auth-key 
+          initial-contents-again (biz/download-user-file user-auth-key
                                                          filename)
           final-contents (slurp "resources/animal_crossing.jpg")
           result (biz/upload-user-file user-auth-key
@@ -533,16 +533,16 @@
           result (biz/download-app-file client-auth-key
                                         app-auth-key
                                         filename)
-      
+
           downloaded-contents result
-	  result (biz/delete-app-file client-auth-key
-	                              app-auth-key
-				      filename)
-	  deletion-error (get result "error" nil)
-	  result (biz/download-app-file client-auth-key
-	                                app-auth-key
-					filename)
-	  not-downloaded-contents result]
+          result (biz/delete-app-file client-auth-key
+                                      app-auth-key
+                                      filename)
+          deletion-error (get result "error" nil)
+          result (biz/download-app-file client-auth-key
+                                        app-auth-key
+                                        filename)
+          not-downloaded-contents result]
       (is (nil? upload-error))
       (is (= contents downloaded-contents))
       (is (nil? deletion-error))
@@ -557,7 +557,7 @@
           app-auth-key (get result "auth_key" nil)
           result (biz/new-user app-auth-key "fud@nft.io" "pwd")
           user-auth-key (get result "auth_key" nil)
-          download-result (biz/download-user-file user-auth-key 
+          download-result (biz/download-user-file user-auth-key
                                                   "random_file.txt")]
       (is (nil? download-result)))
     (db/drop-database)))
@@ -573,7 +573,7 @@
           result (biz/new-user app-auth-key "fud@nft.io" "pwd")
           user-auth-key (get result "auth_key" nil)
           contents (slurp "resources/pokemon.jpg")
-          result (biz/upload-user-file user-auth-key 
+          result (biz/upload-user-file user-auth-key
                                        "pokemon.jpg"
                                        contents)
           first-upload-error (get result "error" nil)
@@ -604,30 +604,30 @@
           owner-auth-key (get result "auth_key" nil)
           result (biz/new-app owner-auth-key "test list files app")
           app-auth-key (get result "auth_key" nil)
-	  contrib-email "contrib@example.net"
-	  result (biz/new-client contrib-email "passw" false)
-	  contrib-auth-key (get result "auth_key" nil)
-	  _ (biz/invite-to-app-by-email owner-auth-key
-	                                app-auth-key
-					contrib-email
-					"contributor")
-	  result (biz/new-client "thridparty@example.net" "asdf" false)
-	  thirdparty-auth-key (get result "auth_key" nil)
-	  result (biz/new-user app-auth-key "user@example.net" "evil twin")
-	  user-auth-key (get result "auth_key" nil)
-	  contents (slurp "resources/pokemon.jpg")
-	  _ (biz/upload-user-file user-auth-key "pokemon.jpg" contents)
-	  contents (slurp "resources/animal_crossing.jpg")
-	  _ (biz/upload-user-file user-auth-key "animal_crossing.jpg" contents)
-	  result (biz/list-app-files owner-auth-key app-auth-key)
-	  owner-error (get result "error" nil)
-	  owner-files (get result "files" nil)
-	  result (biz/list-app-files contrib-auth-key app-auth-key)
-	  contrib-error (get result "error" nil)
-	  contrib-files (get result "files" nil)
-	  result (biz/list-app-files thirdparty-auth-key app-auth-key)
-	  thirdparty-error (get result "error" nil)
-	  thirdparty-files (get result "files" nil)]
+          contrib-email "contrib@example.net"
+          result (biz/new-client contrib-email "passw" false)
+          contrib-auth-key (get result "auth_key" nil)
+          _ (biz/invite-to-app-by-email owner-auth-key
+                                        app-auth-key
+                                        contrib-email
+                                        "contributor")
+          result (biz/new-client "thridparty@example.net" "asdf" false)
+          thirdparty-auth-key (get result "auth_key" nil)
+          result (biz/new-user app-auth-key "user@example.net" "evil twin")
+          user-auth-key (get result "auth_key" nil)
+          contents (slurp "resources/pokemon.jpg")
+          _ (biz/upload-user-file user-auth-key "pokemon.jpg" contents)
+          contents (slurp "resources/animal_crossing.jpg")
+          _ (biz/upload-user-file user-auth-key "animal_crossing.jpg" contents)
+          result (biz/list-app-files owner-auth-key app-auth-key)
+          owner-error (get result "error" nil)
+          owner-files (get result "files" nil)
+          result (biz/list-app-files contrib-auth-key app-auth-key)
+          contrib-error (get result "error" nil)
+          contrib-files (get result "files" nil)
+          result (biz/list-app-files thirdparty-auth-key app-auth-key)
+          thirdparty-error (get result "error" nil)
+          thirdparty-files (get result "files" nil)]
       (is (nil? owner-error))
       (is (pos? (count owner-files)))
       (is (nil? contrib-error))
@@ -697,7 +697,7 @@
       (is (nil? removal-error))
       (is (false? is-admin-after)))
     (db/drop-database)))
- 
+
 (def action-script-A "
   function main(param)
     print(\"hi\")
@@ -721,7 +721,7 @@
           result (biz/new-app client-auth-key "test crud actions")
           app-auth-key (get result "auth_key" nil)
           action-name "new_action.sql"
-          result (biz/upsert-action client-auth-key 
+          result (biz/upsert-action client-auth-key
                                     app-auth-key
                                     action-name
                                     action-script-A)
@@ -735,32 +735,32 @@
                                action-script-B)
           second-gotten-script (biz/read-action client-auth-key
                                                 app-auth-key
-                                                action-name)       
-	  temp-action-name "strange_aeons.lua"
-	  result (biz/update-action client-auth-key
-	                            app-auth-key
-				    action-name
-				    temp-action-name
-				    action-script-A)
-	  first-rename-error (get result "error" nil)
+                                                action-name)
+          temp-action-name "strange_aeons.lua"
+          result (biz/update-action client-auth-key
+                                    app-auth-key
+                                    action-name
+                                    temp-action-name
+                                    action-script-A)
+          first-rename-error (get result "error" nil)
           third-gotten-script (biz/read-action client-auth-key
                                                app-auth-key
-                                               temp-action-name)       
+                                               temp-action-name)
           result (biz/update-action client-auth-key
-	                            app-auth-key
-				    temp-action-name
-				    action-name
-				    action-script-B)
+                                    app-auth-key
+                                    temp-action-name
+                                    action-name
+                                    action-script-B)
           forth-gotten-script (biz/read-action client-auth-key
                                                app-auth-key
-                                               action-name)  
-	  second-rename-error (get result "error" nil)
+                                               action-name)
+          second-rename-error (get result "error" nil)
           action-list-before (biz/list-actions client-auth-key app-auth-key)
           result (biz/delete-action client-auth-key
                                     app-auth-key
                                     action-name)
           deletion-error (get result "error" nil)
-          action-list-after (biz/list-actions client-auth-key 
+          action-list-after (biz/list-actions client-auth-key
                                               app-auth-key)]
       (is (nil? creation-error))
       (is (= first-gotten-script action-script-A))
@@ -781,12 +781,12 @@
     (let [result (biz/new-client "admin@liberdade.bsb.br" "senha" true)
           admin-auth-key (get result "auth_key" nil)
           result (biz/list-all-clients admin-auth-key)
-	  app-creation-error (biz/new-app admin-auth-key "random app")
-	  app-auth-key (get app-creation-error "auth_key" nil)
-	  user-creation-result (biz/new-user app-auth-key "user@example.net" "yeah yeah")
+          app-creation-error (biz/new-app admin-auth-key "random app")
+          app-auth-key (get app-creation-error "auth_key" nil)
+          user-creation-result (biz/new-user app-auth-key "user@example.net" "yeah yeah")
           user-auth-key (get user-creation-result "auth_key" nil)
           contents (slurp "resources/pokemon.jpg")
-          _ (biz/upload-user-file user-auth-key 
+          _ (biz/upload-user-file user-auth-key
                                   "pokemon.jpg"
                                   contents)
           all-clients (get result "clients" nil)
@@ -797,9 +797,9 @@
           result (biz/list-all-files admin-auth-key)
           all-files (get result "files" nil)
           files-error (get result "error" nil)
-	  result (biz/list-all-admins admin-auth-key)
-	  all-admins (get result "admins" nil)
-	  admins-error (get result "error" nil)]
+          result (biz/list-all-admins admin-auth-key)
+          all-admins (get result "admins" nil)
+          admins-error (get result "error" nil)]
       (is (some? all-clients))
       (is (nil? clients-error))
       (is (some? all-apps))
@@ -825,9 +825,9 @@
           result (biz/list-all-files client-auth-key)
           all-files (get result "files" nil)
           files-error (get result "error" nil)
-	  result (biz/list-all-admins client-auth-key)
-	  all-admins (get result "admins" nil)
-	  admins-error (get result "error" nil)]
+          result (biz/list-all-admins client-auth-key)
+          all-admins (get result "admins" nil)
+          admins-error (get result "error" nil)]
       (is (nil? all-clients))
       (is (some? clients-error))
       (is (nil? all-apps))
@@ -845,19 +845,19 @@
     (let [admin-email "admin@liberdade.bsb.br"
           result (biz/new-client admin-email "senha" true)
           admin-auth-key (get result "auth_key" nil)
-	  user-email "regular@hotmail.com"
-	  result (biz/new-client user-email "password" false)
-	  user-auth-key (get result "auth_key" nil)
-	  result (biz/promote-to-admin user-auth-key admin-email)
-	  user-promotion-error (get result "error" nil)
-	  result (biz/demote-admin user-auth-key admin-email)
-	  user-demotion-error (get result "error" nil)
-	  result (biz/promote-to-admin admin-auth-key user-email)
-	  admin-promotion-error (get result "error" nil)
-	  result (biz/demote-admin user-auth-key admin-email)
-	  admin-demotion-error (get result "error" nil)
-	  result (biz/demote-admin admin-auth-key user-auth-key)
-	  get-pwned (get result "error" nil)]
+          user-email "regular@hotmail.com"
+          result (biz/new-client user-email "password" false)
+          user-auth-key (get result "auth_key" nil)
+          result (biz/promote-to-admin user-auth-key admin-email)
+          user-promotion-error (get result "error" nil)
+          result (biz/demote-admin user-auth-key admin-email)
+          user-demotion-error (get result "error" nil)
+          result (biz/promote-to-admin admin-auth-key user-email)
+          admin-promotion-error (get result "error" nil)
+          result (biz/demote-admin user-auth-key admin-email)
+          admin-demotion-error (get result "error" nil)
+          result (biz/demote-admin admin-auth-key user-auth-key)
+          get-pwned (get result "error" nil)]
       (is (some? user-promotion-error))
       (is (some? user-demotion-error))
       (is (nil? admin-promotion-error))
@@ -871,12 +871,12 @@
     (db/run-migrations)
     (let [result (biz/new-client "admin@liberdade.bsb.br" "senha" true)
           admin-auth-key (get result "auth_key" nil)
-	  result (biz/new-client "random@hotmail.com" "password" false)
-	  client-auth-key (get result "auth_key" nil)
-	  result (biz/check-admin admin-auth-key)
-	  admin-error (get result "error" nil)
-	  result (biz/check-admin client-auth-key)
-	  regular-error (get result "error" nil)]
+          result (biz/new-client "random@hotmail.com" "password" false)
+          client-auth-key (get result "auth_key" nil)
+          result (biz/check-admin admin-auth-key)
+          admin-error (get result "error" nil)
+          result (biz/check-admin client-auth-key)
+          regular-error (get result "error" nil)]
       (is (nil? admin-error))
       (is (some? regular-error)))
     (db/drop-database)))

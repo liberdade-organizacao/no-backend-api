@@ -30,14 +30,14 @@
     (map #(.getName %) files)))
 
 (defn read-sql-dir [dir]
-   (->> dir
-        list-dir
-        (filter #(re-find #"(.*?)\.sql$" %))
-        (reduce (fn [state file]
-                  (assoc state
-                         file
-                         (slurp (str dir "/" file))))
-                {})))
+  (->> dir
+       list-dir
+       (filter #(re-find #"(.*?)\.sql$" %))
+       (reduce (fn [state file]
+                 (assoc state
+                        file
+                        (slurp (str dir "/" file))))
+               {})))
 
 (defn in? [coll it]
   (some #(= % it) coll))

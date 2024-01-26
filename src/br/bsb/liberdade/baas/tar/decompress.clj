@@ -3,7 +3,7 @@
             [clojure.java.io :as io]
             [clj-compress.core :as tar]))
 
-(def tmpd (or (System/getenv "TEMP_FOLDER") "/tmp" ))
+(def tmpd (or (System/getenv "TEMP_FOLDER") "/tmp"))
 
 (defn- random-string [length]
   (loop [alphabet "abcdefghijklmnopqrstuvwxyz"
@@ -49,7 +49,7 @@
                                       "gz")
             extracted-files (list-files temp-output-folder-name)
             result (->> extracted-files
-	                      (map #(.getPath %))
+                        (map #(.getPath %))
                         (reduce (fn [state file]
                                   (assoc state
                                          (-> file (string/split #"/") last)
@@ -58,9 +58,9 @@
         (-> temp-file-name io/file delete-file)
         (-> temp-output-folder-name io/file delete-file)
         result)
-    (catch Exception e
-      (do
-        (-> temp-file-name io/file delete-file)
-        (-> temp-output-folder-name io/file delete-file)
-        nil)))))
+      (catch Exception e
+        (do
+          (-> temp-file-name io/file delete-file)
+          (-> temp-output-folder-name io/file delete-file)
+          nil)))))
 

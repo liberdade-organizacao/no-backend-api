@@ -17,11 +17,11 @@
 (defn- stringify [k v]
   (cond
     (= k :contents)
-      (String. v)
+    (String. v)
     (= k :script)
-      (json/write-str v)
+    (json/write-str v)
     :else
-      v))
+    v))
 
 (defn- build-rec-row-fx [inlet [k v]]
   (str inlet (name k) ": " (stringify k v) "\n"))
@@ -60,11 +60,11 @@
        rest))
 
 (defn- destringify [k v]
-  (cond 
+  (cond
     (= k "script")
-      (json/read-str v)
+    (json/read-str v)
     :else
-      v))
+    v))
 
 (defn- filter-empty-vals [recs]
   (filter (fn [[k v]]
@@ -78,7 +78,7 @@
                   (string/join ","))
         values (->> rec
                     filter-empty-vals
-                    (map (fn [[k v]] 
+                    (map (fn [[k v]]
                            (destringify k v)))
                     (map #(str "'" % "'"))
                     (string/join ","))
@@ -88,7 +88,7 @@
                          (map (fn [[k v]]
                                 (str k "='" (destringify k v) "'")))
                          (string/join ","))
-        query (str "INSERT INTO " table-name 
+        query (str "INSERT INTO " table-name
                    "(" vars ") "
                    "VALUES(" values ") "
                    "ON CONFLICT (id) DO "

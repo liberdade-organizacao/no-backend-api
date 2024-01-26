@@ -14,13 +14,13 @@
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTIzNH0.rWp8vvb4aDZAGcHEYjhCe9qaaf8mSyvyLeyC1QuZWU0")
 
 #_(deftest database-to-json
-  (testing "database backup can be exported to JSON"
-    (db/setup-database)
-    (db/create-admin "admin" "secretpassword" test-note)
-    (db/create-user "username" "password" another-test-note)
-    (let [auth (db/auth-user "admin" "secretpassword")
-          backup (-> auth (get "auth_key") (db/backup))
-          json-representation (json/write-str (:database backup))]
-      (is (not= "Don't know how to write JSON of class java.sql.Timestamp" json-representation)))
-    (db/drop-database)))
+    (testing "database backup can be exported to JSON"
+      (db/setup-database)
+      (db/create-admin "admin" "secretpassword" test-note)
+      (db/create-user "username" "password" another-test-note)
+      (let [auth (db/auth-user "admin" "secretpassword")
+            backup (-> auth (get "auth_key") (db/backup))
+            json-representation (json/write-str (:database backup))]
+        (is (not= "Don't know how to write JSON of class java.sql.Timestamp" json-representation)))
+      (db/drop-database)))
 
