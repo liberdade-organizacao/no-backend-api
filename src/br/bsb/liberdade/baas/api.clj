@@ -33,7 +33,8 @@
 ; # ROUTES #
 ; ##########
 (defn check-health [req]
-  (boilerplate {"status" "ok"}))
+  (boilerplate {"api" "ok"
+                "db" (db/check-health)}))
 
 (defn clients-signup [req]
   (let [params (json/read-str (slurp (:body req)))
