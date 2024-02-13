@@ -9,15 +9,15 @@
   (if b "on" "off"))
 
 (defn new-client-auth-key [client-id is-admin]
-  (utils/encode-secret {"client_id" client-id
-                        "is_admin" is-admin}))
+  (utils/encode-secret {:client_id client-id
+                        :is_admin is-admin}))
 
 (defn new-app-auth-key [app-id]
-  (utils/encode-secret {"app_id" app-id}))
+  (utils/encode-secret {:app_id app-id}))
 
 (defn new-user-auth-key [app-id user-id]
-  (utils/encode-secret {"user_id" user-id
-                        "app_id" app-id}))
+  (utils/encode-secret {:user_id user-id
+                        :app_id app-id}))
 
 (defn new-client [email password is-admin]
   (try
@@ -48,9 +48,9 @@
     (try
       (let [client-id (:client-id state)
             app-name (:app-name state)
-            result (db/run-operation-first "create-app.sql"
-                                           {"owner_id" client-id
-                                            "app_name" app-name})
+            data {"owner_id" client-id
+                  "app_name" app-name}
+            result (db/run-operation-first "create-app.sql" data)
             app-id (:id result)
             next-state (assoc state :app-id app-id)]
         next-state)
