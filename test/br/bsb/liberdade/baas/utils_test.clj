@@ -2,18 +2,18 @@
   (:require [clojure.test :refer :all]
             [br.bsb.liberdade.baas.utils :as utils]))
 
-(def random-jwt
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTIzNH0.rWp8vvb4aDZAGcHEYjhCe9qaaf8mSyvyLeyC1QuZWU0")
+(def random-token
+  "XZ69WpRTqZgEOqCJqaOK4iOKGLkg505VSASQ8MMGWs3mn1p6U81FvB5rSLpKlIjkZTUIBC6KiHIboy")
 
-(deftest jwt-handling
+(deftest token-handling
   (testing "can encode and decode data"
     (let [data {:data "a random payload"}
           encoded (utils/encode-secret data)
           decoded (utils/decode-secret encoded)]
       (is (= data decoded))
-      (is (not (= data encoded)))))
+      (is (not= data encoded))))
   (testing "fails gracefully"
-    (let [decoded (utils/decode-secret random-jwt)]
+    (let [decoded (utils/decode-secret random-token)]
       (is (nil? decoded)))))
 
 (deftest password-handling
