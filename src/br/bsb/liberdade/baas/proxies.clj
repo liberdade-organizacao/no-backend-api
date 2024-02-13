@@ -22,3 +22,12 @@
         :body
         json/read-str)))
 
+(defn check-scripting-engine-health []
+  (try
+    (-> scripting-engine-url
+        (str "/health")
+        client/get
+        :body)
+    (catch Exception ex
+      "KO")))
+
