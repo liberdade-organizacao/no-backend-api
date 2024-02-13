@@ -88,6 +88,25 @@
         (execute-query (get sql-operations "remove-last-migration.sql"))
         (recur (inc n))))))
 
+(defn check-health []
+  (try
+    (let [result (-> sql-operations
+                     (get "check-health.sql")
+                     execute-query)
+          ok (some? result)]
+      (if ok
+        "ok"
+        "ko"))
+    (catch Exception ex
+      "ko")))
+(defn- get-last-migration []
+  (-> sql-operations
+      (get "get-last-migration.sql")
+      execute-query
+      first
+      (get :name)))
+
+
 ; #####################
 ; # GLOBAL OPERATIONS #
 ; #####################
