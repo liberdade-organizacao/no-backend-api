@@ -34,7 +34,8 @@
 ; ##########
 (defn check-health [req]
   (boilerplate {"api" "ok"
-                "db" (db/check-health)}))
+                "db" (db/check-health)
+                "version" "0.1.5"}))
 
 (defn clients-signup [req]
   (let [params (json/read-str (slurp (:body req)))
