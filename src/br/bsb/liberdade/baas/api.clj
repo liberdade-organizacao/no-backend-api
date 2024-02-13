@@ -35,6 +35,7 @@
 (defn check-health [req]
   (boilerplate {"api" "ok"
                 "db" (db/check-health)
+                "scripting" (proxies/check-scripting-engine-health)
                 "version" "0.1.5"}))
 
 (defn clients-signup [req]
