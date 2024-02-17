@@ -20,7 +20,8 @@
             second-auth-key (get result "auth_key" nil)
             error (get result "error" nil)
             is-second-error-nil? (= nil error)]
-        (is (= first-auth-key second-auth-key))
+        (is (= (utils/decode-secret first-auth-key)
+               (utils/decode-secret second-auth-key)))
         (is (some? first-auth-key))
         (is is-first-error-nil?)
         (is is-second-error-nil?))
@@ -277,7 +278,8 @@
           result (biz/auth-client email new-password)
           auth-key-again (get result "auth_key" nil)]
       (is (nil? error))
-      (is (= auth-key auth-key-again)))
+      (is (= (utils/decode-secret auth-key)
+             (utils/decode-secret auth-key-again))))
     (db/drop-database))
   (testing "Clients change password -- wrong password"
     (db/setup-database)
@@ -351,7 +353,8 @@
           second-error (get result "error" nil)]
       (is (some? user-auth-key))
       (is (some? user-auth-key-again))
-      (is (= user-auth-key user-auth-key-again))
+      (is (= (utils/decode-secret user-auth-key)
+             (utils/decode-secret user-auth-key-again)))
       (is (nil? first-error))
       (is (nil? second-error)))
     (db/drop-database))
@@ -394,7 +397,8 @@
           result (biz/auth-user app-auth-key user-email new-password)
           user-auth-key-again (get result "auth_key" nil)]
       (is (nil? error))
-      (is (= user-auth-key user-auth-key-again)))
+      (is (= (utils/decode-secret user-auth-key)
+             (utils/decode-secret user-auth-key-again))))
     (db/drop-database))
   (testing "clients can list the users from their apps"
     (db/setup-database)
