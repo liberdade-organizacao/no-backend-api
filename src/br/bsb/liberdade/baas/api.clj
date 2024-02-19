@@ -36,7 +36,7 @@
   (boilerplate {"api" "ok"
                 "db" (db/check-health)
                 "scripting" (proxies/check-scripting-engine-health)
-                "version" "0.2.0"}))
+                "version" "0.2.1"}))
 
 (defn clients-signup [req]
   (let [params (json/read-str (slurp (:body req)))
