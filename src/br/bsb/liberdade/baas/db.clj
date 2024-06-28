@@ -10,10 +10,8 @@
 (def sql-operations-folder (str sql-resources-folder "/operations"))
 (def sql-migrations (utils/read-sql-dir sql-migrations-folder))
 (def sql-operations (utils/read-sql-dir sql-operations-folder))
-(def db (or (System/getenv "JDBC_DATABASE_URL")
-            "jdbc:postgresql://localhost:5434/baas?user=liberdade&password=password"))
-(def ds (jdbc/get-datasource db))
-(Class/forName "org.postgresql.Driver")  ; required to get the driver working properly
+(def ds (jdbc/get-datasource {:dbtype "sqlite"
+                              :dbname "db/database.sqlite"}))
 
 (defn execute-query [query]
   (jdbc/execute! ds [query] {:builder-fn rs/as-unqualified-lower-maps}))
@@ -22,12 +20,19 @@
 ; # MIGRATE UP #
 ; ##############
 
+(defn spy [x]
+  (println x)
+  x)
+
+(defn get-opp [k m]
+  (get m k))
+
 (defn- check-if-migration-exists [migration]
   (->> {"migration" migration}
        (strint/strint (get sql-operations "check-if-migration-exists.sql"))
        execute-query
        first
-       :count
+       (get-opp (keyword "count(*)"))
        pos?))
 
 (defn- run-migration [migration-file-name]
@@ -99,13 +104,13 @@
         "ko"))
     (catch Exception ex
       "ko")))
+
 (defn- get-last-migration []
   (-> sql-operations
       (get "get-last-migration.sql")
       execute-query
       first
       (get :name)))
-
 
 ; #####################
 ; # GLOBAL OPERATIONS #
