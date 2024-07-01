@@ -1,0 +1,1 @@
+DELETE FROM files WHERE owner_id IS NULL;
