@@ -1,5 +1,3 @@
-
-
 CREATE TABLE IF NOT EXISTS files (
     id SERIAL PRIMARY KEY,
     filename VARCHAR(64) NOT NULL,
