@@ -4,5 +4,6 @@ CREATE TABLE IF NOT EXISTS actions (
     name VARCHAR(32) NOT NULL,
     script TEXT,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT current_timestamp,
-    last_updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT current_timestamp
+    last_updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT current_timestamp,
+    UNIQUE(app_id, name)
 );

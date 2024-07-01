@@ -14,6 +14,8 @@
                               :dbname "db/database.sqlite"}))
 
 (defn execute-query [query]
+  (println "---")
+  (println query)
   (jdbc/execute! ds [query] {:builder-fn rs/as-unqualified-lower-maps}))
 
 ; ##############
@@ -81,17 +83,13 @@
     (execute-query (get sql-operations "remove-last-migration.sql"))))
 
 (defn undo-migrations []
-  (let [files (->> sql-migrations-folder
-                   utils/list-dir
-                   (filter #(re-find #"(.*?)\.down\.sql$" %))
-                   sort
-                   reverse)
-        limit (count files)]
-    (loop [n 0]
-      (when (< n limit)
-        (execute-query (get sql-migrations (nth files n)))
-        (execute-query (get sql-operations "remove-last-migration.sql"))
-        (recur (inc n))))))
+  (->> (utils/list-dir sql-migrations-folder)
+       (filter #(re-find #"(.*?)\.down\.sql$" %))
+       sort
+       reverse
+       (map #(do (execute-query (get sql-migrations %))
+                 (execute-query (get sql-operations "remove-last-migration.sql"))))
+       doall))
 
 (defn check-health []
   (try

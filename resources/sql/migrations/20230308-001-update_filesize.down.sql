@@ -1,1 +1,1 @@
-DROP FUNCTION IF EXISTS update_file_size CASCADE;
+DROP TRIGGER IF EXISTS insert_file_size;
