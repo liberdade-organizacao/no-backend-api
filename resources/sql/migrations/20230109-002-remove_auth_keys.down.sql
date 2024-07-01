@@ -1,2 +1,1 @@
- 
 ALTER TABLE users ADD COLUMN auth_key TEXT;
