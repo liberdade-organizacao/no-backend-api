@@ -1,1 +1,6 @@
-CREATE TRIGGER update_apps_timestamp BEFORE UPDATE ON apps FOR EACH ROW EXECUTE PROCEDURE update_last_updated_at_column();
+CREATE TRIGGER IF NOT EXISTS update_app_memberships_timestamp
+BEFORE UPDATE ON app_memberships
+FOR EACH ROW BEGIN
+    UPDATE app_memberships SET last_updated_at = NOW() WHERE id=OLD.id;
+END;
+
