@@ -1,0 +1,2 @@
+
+ALTER TABLE apps ADD COLUMN auth_key TEXT;

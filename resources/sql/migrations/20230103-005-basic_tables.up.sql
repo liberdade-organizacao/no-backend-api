@@ -1,5 +1,3 @@
-
-
 CREATE TABLE IF NOT EXISTS app_memberships (
     id SERIAL PRIMARY KEY,
     app_id INT NOT NULL REFERENCES apps(id) ON DELETE CASCADE,
