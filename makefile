@@ -68,3 +68,7 @@ file_size_job:
 lint:
 	cljfmt fix
 
+.PHONY: repl
+repl:
+	lein repl
+
