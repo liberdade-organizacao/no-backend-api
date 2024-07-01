@@ -1,4 +1,6 @@
-CREATE OR REPLACE FUNCTION update_file_size()
-RETURNS TRIGGER AS $$
-BEGIN
-    NEW.file_size = LENGTH(NEW.contents);
+CREATE TRIGGER IF NOT EXISTS insert_file_size
+AFTER INSERT ON files
+FOR EACH ROW BEGIN
+    UPDATE files SET file_size=LENGTH(OLD.contents) WHERE id = OLD.id;
+END;
+
