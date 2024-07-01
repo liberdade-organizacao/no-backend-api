@@ -1,2 +1,1 @@
-
-    RETURN NEW;
+RETURN NEW;
