@@ -4,33 +4,40 @@
             [br.bsb.liberdade.baas.db :as db]
             [br.bsb.liberdade.baas.business :as biz]))
 
+(defn- database-fixture [f]
+  (do
+    (db/setup-database)
+    (db/run-migrations)
+    (try
+      (f)
+      (catch Exception e
+        (println e))
+      (finally
+        (db/drop-database)))))
+
+(use-fixtures :each database-fixture)
+
 (deftest handle-clients-accounts--happy-cases
   (testing "Can create an account and login"
-    (do
-      (db/setup-database)
-      (db/run-migrations)
-      (let [email "test@example.net"
-            password "password"
-            is-admin false
-            result (biz/new-client email password is-admin)
-            first-auth-key (get result "auth_key" nil)
-            error (get result "error" nil)
-            is-first-error-nil? (= nil error)
-            result (biz/auth-client email password)
-            second-auth-key (get result "auth_key" nil)
-            error (get result "error" nil)
-            is-second-error-nil? (= nil error)]
-        (is (= (utils/decode-secret first-auth-key)
-               (utils/decode-secret second-auth-key)))
-        (is (some? first-auth-key))
-        (is is-first-error-nil?)
-        (is is-second-error-nil?))
-      (db/drop-database))))
+    (let [email "test@example.net"
+          password "password"
+          is-admin false
+          result (biz/new-client email password is-admin)
+          first-auth-key (get result "auth_key" nil)
+          error (get result "error" nil)
+          is-first-error-nil? (= nil error)
+          result (biz/auth-client email password)
+          second-auth-key (get result "auth_key" nil)
+          error (get result "error" nil)
+          is-second-error-nil? (= nil error)]
+      (is (= (utils/decode-secret first-auth-key)
+             (utils/decode-secret second-auth-key)))
+      (is (some? first-auth-key))
+      (is is-first-error-nil?)
+      (is is-second-error-nil?))))
 
 (deftest handle-clients-accounts--sad-cases
   (testing "Clients try to login with wrong password"
-    (db/setup-database)
-    (db/run-migrations)
     (let [email "another-test@example.net"
           password "password"
           wrong-password "wrong password"
@@ -39,11 +46,8 @@
           auth-key (get result "auth_key" nil)
           error (get result "error" nil)]
       (is (nil? auth-key))
-      (is (some? error)))
-    (db/drop-database))
+      (is (some? error))))
   (testing "Clients try to create the same account twice"
-    (db/setup-database)
-    (db/run-migrations)
     (let [email "test@example.net"
           password1 "password one"
           password2 "password two"
@@ -56,13 +60,10 @@
       (is (some? first-auth-key))
       (is (nil? first-error))
       (is (nil? second-auth-key))
-      (is (some? second-error)))
-    (db/drop-database)))
+      (is (some? second-error)))))
 
 (deftest handle-apps--happy-cases
   (testing "User can create and delete an app"
-    (db/setup-database)
-    (db/run-migrations)
     (let [email "client1@example.net"
           password "password"
           result (biz/new-client email password false)
@@ -81,13 +82,10 @@
       (is (nil? first-error))
       (is (pos? (count apps-before-deletion)))
       (is (nil? second-error))
-      (is (= 0 (count apps-after-deletion))))
-    (db/drop-database)))
+      (is (= 0 (count apps-after-deletion))))))
 
-(deftest handle-apps--sad-cases
+(deftest handle-apps--sad-cases--unique-app-name
   (testing "Apps from the same owner shouldn't have the same name"
-    (db/setup-database)
-    (db/run-migrations)
     (let [email "test@example.net"
           password "password"
           result (biz/new-client email password false)
@@ -104,11 +102,10 @@
           third-error (get result "error" nil)]
       (is (nil? first-error))
       (is (some? second-error))
-      (is (nil? third-error)))
-    (db/drop-database))
+      (is (nil? third-error)))))
+
+(deftest handle-apps--sad-cases--wrong-user-cant-delete-app
   (testing "Wrong user should be unable to delete app"
-    (db/setup-database)
-    (db/run-migrations)
     (let [result (biz/new-client "owner@example.net" "pwd" false)
           owner-auth-key (get result "auth_key" nil)
           result (biz/new-client "client@example.net" "pwd" false)
@@ -118,11 +115,10 @@
           app-auth-key (get result "auth_key" nil)
           result (biz/delete-app client-auth-key app-auth-key)
           error (get result "error" nil)]
-      (is (some? error)))
-    (db/drop-database))
+      (is (some? error)))))
+
+(deftest handle-apps--sad-cases--wrong-auth-key
   (testing "Users using the wrong auth key shouldn't be able to do anything"
-    (db/setup-database)
-    (db/run-migrations)
     (let [result (biz/new-client "owner@example.net" "pwd" false)
           owner-auth-key (get result "auth_key" nil)
           result (biz/new-client "client@example.net" "pwd" false)
@@ -133,13 +129,10 @@
           app-auth-key (get result "auth_key" nil)
           result (biz/delete-app wrong-auth-key app-auth-key)
           error (get result "error" nil)]
-      (is (some? error)))
-    (db/drop-database)))
+      (is (some? error)))))
 
-(deftest invite-clients-to-apps--happy-case
+(deftest invite-clients-to-apps--happy-case--clients-can-invite-managers
   (testing "clients can invite other clients to manage their apps"
-    (db/setup-database)
-    (db/run-migrations)
     (let [result (biz/new-client "owner@example.net" "pwd" false)
           owner-auth-key (get result "auth_key" nil)
           invitee-email "invitee@example.net"
@@ -155,11 +148,10 @@
           result (biz/get-clients-apps client-auth-key)
           apps (get result "apps" nil)]
       (is (nil? first-error))
-      (is (pos? (count apps))))
-    (db/drop-database))
+      (is (pos? (count apps))))))
+
+(deftest invitest-clients-to-apps--happy-case--invited-admins-can-invite
   (testing "Invited admins can invite other users"
-    (db/setup-database)
-    (db/run-migrations)
     (let [result (biz/new-client "owner@example.net" "ownerpwd" false)
           owner-auth-key (get result "auth_key" nil)
           invited-admin-email "invited_admin@example.net"
@@ -183,13 +175,10 @@
           result (biz/get-clients-apps invited-contrib-auth-key)
           invited-contrib-apps (get result "apps" [])]
       (is (pos? (count invited-admin-apps)))
-      (is (pos? (count invited-contrib-apps))))
-    (db/drop-database)))
+      (is (pos? (count invited-contrib-apps))))))
 
-(deftest invite-clients-to-apps--sad-cases
+(deftest invite-clients-to-apps--sad-cases--inexistent-accounts
   (testing "Inexistent accounts cant be invited"
-    (db/setup-database)
-    (db/run-migrations)
     (let [result (biz/new-client "owner@example.net" "pwd" false)
           client-auth-key (get result "auth_key" nil)
           result (biz/new-app client-auth-key "yet another test app")
@@ -199,11 +188,10 @@
                                              "not_here@example.net"
                                              "contributor")
           error (get result "error" nil)]
-      (is (some? error)))
-    (db/drop-database))
+      (is (some? error)))))
+
+(deftest invite-clients-to-apps--sad-cases--contributors-rights
   (testing "Contributors cant invite to apps"
-    (db/setup-database)
-    (db/run-migrations)
     (let [result (biz/new-client "owner@example.net" "ownerpwd" false)
           owner-auth-key (get result "auth_key" nil)
           invited-admin-email "invited_admin@example.net"
@@ -229,11 +217,10 @@
           invited-contrib-apps (get result "apps" [])]
       (is (pos? (count invited-admin-apps)))
       (is (some? bad-invitation-error))
-      (is (= 0 (count invited-contrib-apps))))
-    (db/drop-database))
+      (is (= 0 (count invited-contrib-apps))))))
+
+(deftest invite-clients-to-apps--sad-cases--revoked-clients
   (testing "revoked clients should not invite other clients"
-    (db/setup-database)
-    (db/run-migrations)
     (let [revoker-email "revoker@pm.me"
           result (biz/new-client "revoker@pm.me" "pwd" false)
           revoker-auth-key (get result "auth_key" nil)
@@ -261,13 +248,10 @@
       (is (nil? first-invitation-error))
       (is (nil? revocation-error))
       (is (some? second-invitation-error))
-      (is (-> invokee-apps count (= 0))))
-    (db/drop-database)))
+      (is (-> invokee-apps count (= 0))))))
 
 (deftest clients-change-password
   (testing "Clients change password -- happy case"
-    (db/setup-database)
-    (db/run-migrations)
     (let [email "client@example.net"
           old-password "old password"
           result (biz/new-client email old-password false)
@@ -279,11 +263,10 @@
           auth-key-again (get result "auth_key" nil)]
       (is (nil? error))
       (is (= (utils/decode-secret auth-key)
-             (utils/decode-secret auth-key-again))))
-    (db/drop-database))
+             (utils/decode-secret auth-key-again))))))
+
+(deftest clients-change-password--wrong-password
   (testing "Clients change password -- wrong password"
-    (db/setup-database)
-    (db/run-migrations)
     (let [email "client@example.net"
           old-password "old password"
           result (biz/new-client email old-password false)
@@ -295,13 +278,10 @@
           result (biz/auth-client email new-password)
           auth-key-again (get result "auth_key" nil)]
       (is (some? error))
-      (is (not= auth-key auth-key-again)))
-    (db/drop-database)))
+      (is (not= auth-key auth-key-again)))))
 
-(deftest delete-clients
+(deftest delete-clients--common-case
   (testing "Delete actual client and check if their stuff is not there anymore"
-    (db/setup-database)
-    (db/run-migrations)
     (let [password "random password"
           result (biz/new-client "user@example.net" password false)
           client-auth-key (get result "auth_key" nil)
@@ -315,11 +295,10 @@
           apps-after (get result "apps" [])]
       (is (nil? error))
       (is (pos? (count apps-before)))
-      (is (= 0 (count apps-after))))
-    (db/drop-database))
+      (is (= 0 (count apps-after))))))
+
+(deftest delete-clients--wrong-password
   (testing "Fails to delete account if password is wrong"
-    (db/setup-database)
-    (db/run-migrations)
     (let [result (biz/new-client "user@example.net" "correctPassword" false)
           client-auth-key (get result "auth_key" nil)
           result (biz/new-app client-auth-key "delete client test app")
@@ -332,13 +311,10 @@
           apps-after (get result "apps" [])]
       (is (some? error))
       (is (pos? (count apps-before)))
-      (is (pos? (count apps-after))))
-    (db/drop-database)))
+      (is (pos? (count apps-after))))))
 
 (deftest user-accounts
   (testing "User can create account on app and login"
-    (db/setup-database)
-    (db/run-migrations)
     (let [result (biz/new-client "owner@example.net" "password" false)
           client-auth-key (get result "auth_key" nil)
           result (biz/new-app client-auth-key "user account test app")
@@ -356,11 +332,10 @@
       (is (= (utils/decode-secret user-auth-key)
              (utils/decode-secret user-auth-key-again)))
       (is (nil? first-error))
-      (is (nil? second-error)))
-    (db/drop-database))
+      (is (nil? second-error)))))
+
+(deftest user-accounts-multiple-apps-same-email
   (testing "User can create accounts on multiple apps with the same email"
-    (db/setup-database)
-    (db/run-migrations)
     (let [result (biz/new-client "owner@example.net" "password" false)
           client-auth-key (get result "auth_key" nil)
           result (biz/new-app client-auth-key "first test app")
@@ -378,11 +353,10 @@
       (is (some? first-user-auth-key))
       (is (nil? first-error))
       (is (some? second-user-auth-key))
-      (is (nil? second-error)))
-    (db/drop-database))
+      (is (nil? second-error)))))
+
+(deftest users-can-change-their-password
   (testing "users can change their password"
-    (db/setup-database)
-    (db/run-migrations)
     (let [result (biz/new-client "owner@liberdade.bsb.br" "passwordy" false)
           client-auth-key (get result "auth_key" nil)
           result (biz/new-app client-auth-key "change user password  app")
@@ -398,11 +372,10 @@
           user-auth-key-again (get result "auth_key" nil)]
       (is (nil? error))
       (is (= (utils/decode-secret user-auth-key)
-             (utils/decode-secret user-auth-key-again))))
-    (db/drop-database))
+             (utils/decode-secret user-auth-key-again))))))
+
+(deftest clients-can-list-users-from-their-apps
   (testing "clients can list the users from their apps"
-    (db/setup-database)
-    (db/run-migrations)
     (let [result (biz/new-client "owner@liberdade.bsb.br" "pwd" false)
           client-auth-key (get result "auth_key" nil)
           result (biz/new-app client-auth-key "list users apps")
@@ -415,13 +388,10 @@
           users (get result "users" nil)]
       (is (nil? error))
       (is (some? users))
-      (is (= 3 (count users))))
-    (db/drop-database)))
+      (is (= 3 (count users))))))
 
-(deftest user-accounts--error-handling
+(deftest user-accounts--error-handling--unique-email
   (testing "User cannot create accounts with the same email on the same app"
-    (db/setup-database)
-    (db/run-migrations)
     (let [result (biz/new-client "owner@example.net" "password" false)
           client-auth-key (get result "auth_key" nil)
           result (biz/new-app client-auth-key "first test app")
@@ -437,11 +407,10 @@
       (is (some? first-user-auth-key))
       (is (nil? first-error))
       (is (nil? second-user-auth-key))
-      (is (some? second-error)))
-    (db/drop-database))
+      (is (some? second-error)))))
+
+(deftest user-accounts--error-handling--wrong-password
   (testing "User cannot login with wrong password on app"
-    (db/setup-database)
-    (db/run-migrations)
     (let [result (biz/new-client "owner@example.net" "password" false)
           client-auth-key (get result "auth_key" nil)
           result (biz/new-app client-auth-key "first test app")
@@ -458,11 +427,10 @@
       (is (some? first-user-auth-key))
       (is (nil? first-error))
       (is (nil? second-user-auth-key))
-      (is (some? second-error)))
-    (db/drop-database))
+      (is (some? second-error)))))
+
+(deftest user-accounts--error-handling--deleted-users
   (testing "Deleted user cannot login anymore"
-    (db/setup-database)
-    (db/run-migrations)
     (let [result (biz/new-client "owner@example.net" "password" false)
           client-auth-key (get result "auth_key" nil)
           result (biz/new-app client-auth-key "first test app")
@@ -486,13 +454,10 @@
       (is (nil? second-error))
       (is (nil? third-user-auth-key))
       (is (some? third-error))
-      (is (nil? deletion-error)))
-    (db/drop-database)))
+      (is (nil? deletion-error)))))
 
-(deftest test-file-upload-and-download
+(deftest test-user-file-upload-and-download
   (testing "test if it's possible to upload and download user files"
-    (db/setup-database)
-    (db/run-migrations)
     (let [result (biz/new-client "owner@example.net" "password" false)
           client-auth-key (get result "auth_key" nil)
           result (biz/new-app client-auth-key "file test app")
@@ -518,11 +483,10 @@
       (is (= initial-contents initial-contents-again))
       (is (nil? update-error))
       (is (= final-contents final-contents-again))
-      (is (not= initial-contents-again final-contents-again)))
-    (db/drop-database))
+      (is (not= initial-contents-again final-contents-again)))))
+
+(deftest test-app-file-upload-and-download
   (testing "test if it's possible to upload and download app files"
-    (db/setup-database)
-    (db/run-migrations)
     (let [result (biz/new-client "app_file@html.com" "htmlsux" false)
           client-auth-key (get result "auth_key" nil)
           result (biz/new-app client-auth-key "app with files")
@@ -550,11 +514,10 @@
       (is (nil? upload-error))
       (is (= contents downloaded-contents))
       (is (nil? deletion-error))
-      (is (nil? not-downloaded-contents)))
-    (db/drop-database))
+      (is (nil? not-downloaded-contents)))))
+
+(deftest test-inexistent-file-download
   (testing "downloading inexistent files"
-    (db/setup-database)
-    (db/run-migrations)
     (let [result (biz/new-client "owner@example.net" "password" false)
           client-auth-key (get result "auth_key" nil)
           result (biz/new-app client-auth-key "file test app")
@@ -563,13 +526,10 @@
           user-auth-key (get result "auth_key" nil)
           download-result (biz/download-user-file user-auth-key
                                                   "random_file.txt")]
-      (is (nil? download-result)))
-    (db/drop-database)))
+      (is (nil? download-result)))))
 
 (deftest list-and-delete-files
   (testing "list and delete files"
-    (db/setup-database)
-    (db/run-migrations)
     (let [result (biz/new-client "owner@example.net" "password" false)
           client-auth-key (get result "auth_key" nil)
           result (biz/new-app client-auth-key "file test app")
@@ -597,13 +557,10 @@
       (is (nil? first-deletion-error))
       (is (some? second-deletion-error))
       (is (= 2 (count filenames-before)))
-      (is (= 1 (count filenames-after))))
-    (db/drop-database)))
+      (is (= 1 (count filenames-after))))))
 
 (deftest list-app-files
   (testing "Only admin and contrib clients can list app files"
-    (db/setup-database)
-    (db/run-migrations)
     (let [result (biz/new-client "owner@example.net" "pwd" false)
           owner-auth-key (get result "auth_key" nil)
           result (biz/new-app owner-auth-key "test list files app")
@@ -637,13 +594,10 @@
       (is (nil? contrib-error))
       (is (pos? (count contrib-files)))
       (is (some? thirdparty-error))
-      (is (= 0 (count thirdparty-files))))
-    (db/drop-database)))
+      (is (= 0 (count thirdparty-files))))))
 
 (deftest list-app-managers
   (testing "Let clients list managers in an app"
-    (db/setup-database)
-    (db/run-migrations)
     (let [result (biz/new-client "owner@liberdade.bsb.br" "pwd" false)
           owner-auth-key (get result "auth_key" nil)
           result (biz/new-app owner-auth-key "list managers app")
@@ -672,13 +626,10 @@
       (is (some? contrib-managers))
       (is (= 2 (count contrib-managers)))
       (is (some? random-error))
-      (is (nil? random-managers)))
-    (db/drop-database)))
+      (is (nil? random-managers)))))
 
 (deftest revoke-manager-access-to-app
   (testing "clients can revoke access of other clients from their apps"
-    (db/setup-database)
-    (db/run-migrations)
     (let [result (biz/new-client "admin@liberdade.bsb.br" "pwd" false)
           owner-auth-key (get result "auth_key" nil)
           client-email "client@liberdade.bsb.br"
@@ -699,8 +650,7 @@
       (is (nil? invitation-error))
       (is (true? was-admin-before))
       (is (nil? removal-error))
-      (is (false? is-admin-after)))
-    (db/drop-database)))
+      (is (false? is-admin-after)))))
 
 (def action-script-A "
   function main(param)
@@ -718,8 +668,6 @@
 
 (deftest actions
   (testing "Clients can create, read, update, and delete actions, as well as listing actions from an app"
-    (db/setup-database)
-    (db/run-migrations)
     (let [result (biz/new-client "voldemort@hogwarts.co.uk" "fsckharry" false)
           client-auth-key (get result "auth_key" nil)
           result (biz/new-app client-auth-key "test crud actions")
@@ -775,13 +723,10 @@
       (is (= forth-gotten-script action-script-B))
       (is (= 1 (count action-list-before)))
       (is (= 0 (count action-list-after)))
-      (is (nil? deletion-error)))
-    (db/drop-database)))
+      (is (nil? deletion-error)))))
 
 (deftest admin-test
   (testing "Only admins can list all of a thing"
-    (db/setup-database)
-    (db/run-migrations)
     (let [result (biz/new-client "admin@liberdade.bsb.br" "senha" true)
           admin-auth-key (get result "auth_key" nil)
           result (biz/list-all-clients admin-auth-key)
@@ -813,11 +758,10 @@
       (is (pos? (count all-files)))
       (is (nil? files-error))
       (is (some? all-admins))
-      (is (nil? admins-error)))
-    (db/drop-database))
+      (is (nil? admins-error)))))
+
+(deftest non-admin-users
   (testing "Regular users can't lists all of a thing"
-    (db/setup-database)
-    (db/run-migrations)
     (let [result (biz/new-client "regular@hotmail.com" "pwd" false)
           client-auth-key (get result "auth_key" nil)
           result (biz/list-all-clients client-auth-key)
@@ -839,13 +783,10 @@
       (is (nil? all-files))
       (is (some? files-error))
       (is (nil? all-admins))
-      (is (some? admins-error)))
-    (db/drop-database)))
+      (is (some? admins-error)))))
 
 (deftest promote-and-demote-admins
   (testing "only admins can promote and demote admins"
-    (db/setup-database)
-    (db/run-migrations)
     (let [admin-email "admin@liberdade.bsb.br"
           result (biz/new-client admin-email "senha" true)
           admin-auth-key (get result "auth_key" nil)
@@ -866,13 +807,10 @@
       (is (some? user-demotion-error))
       (is (nil? admin-promotion-error))
       (is (nil? admin-demotion-error))
-      (is (some? get-pwned)))
-    (db/drop-database)))
+      (is (some? get-pwned)))))
 
 (deftest check-if-admin
   (testing "check if client is an admin"
-    (db/setup-database)
-    (db/run-migrations)
     (let [result (biz/new-client "admin@liberdade.bsb.br" "senha" true)
           admin-auth-key (get result "auth_key" nil)
           result (biz/new-client "random@hotmail.com" "password" false)
@@ -882,6 +820,5 @@
           result (biz/check-admin client-auth-key)
           regular-error (get result "error" nil)]
       (is (nil? admin-error))
-      (is (some? regular-error)))
-    (db/drop-database)))
+      (is (some? regular-error)))))
 

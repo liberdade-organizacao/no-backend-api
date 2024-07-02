@@ -87,6 +87,7 @@
        (filter #(re-find #"(.*?)\.down\.sql$" %))
        sort
        reverse
+       spy
        (map #(do (execute-query (get sql-migrations %))
                  (execute-query (get sql-operations "remove-last-migration.sql"))))
        doall))
