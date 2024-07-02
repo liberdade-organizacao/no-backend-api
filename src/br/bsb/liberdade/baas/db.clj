@@ -26,16 +26,13 @@
   (println x)
   x)
 
-(defn get-opp [k m]
-  (get m k))
-
 (defn- check-if-migration-exists [migration]
-  (->> {"migration" migration}
-       (strint/strint (get sql-operations "check-if-migration-exists.sql"))
-       execute-query
-       first
-       (get-opp (keyword "count(*)"))
-       pos?))
+  (-> (strint/strint (get sql-operations "check-if-migration-exists.sql")
+                     {"migration" migration})
+      execute-query
+      first
+      (get (keyword "count(*)"))
+      pos?))
 
 (defn- run-migration [migration-file-name]
   (->> migration-file-name
@@ -77,20 +74,21 @@
       first
       (get :name)))
 
+(defn undo-migration [migration]
+  (execute-query (get sql-migrations (str migration ".down.sql")))
+  (execute-query (strint/strint (get sql-operations "remove-migration.sql")
+                                {"migration" migration})))
+
 (defn undo-last-migration []
-  (let [last-migration (get-last-migration)]
-    (execute-query (get sql-migrations (str last-migration ".down.sql")))
-    (execute-query (get sql-operations "remove-last-migration.sql"))))
+  (-> (get-last-migration) undo-migration))
 
 (defn undo-migrations []
-  (->> (utils/list-dir sql-migrations-folder)
+  (->> (keys sql-migrations)
        (filter #(re-find #"(.*?)\.down\.sql$" %))
+       (map #(first (clojure.string/split % #"\.")))
        sort
        reverse
-       spy
-       (map #(do (execute-query (get sql-migrations %))
-                 (execute-query (get sql-operations "remove-last-migration.sql"))))
-       doall))
+       (mapv undo-migration)))
 
 (defn check-health []
   (try

@@ -1,1 +1,1 @@
-DROP TABLE app_memberships;
+DROP TABLE IF EXISTS app_memberships;

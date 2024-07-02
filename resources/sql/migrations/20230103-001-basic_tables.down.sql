@@ -1,1 +1,1 @@
-DROP TABLE actions;
+DROP TABLE IF EXISTS actions;

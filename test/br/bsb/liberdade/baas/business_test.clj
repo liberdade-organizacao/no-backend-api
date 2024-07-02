@@ -46,7 +46,9 @@
           auth-key (get result "auth_key" nil)
           error (get result "error" nil)]
       (is (nil? auth-key))
-      (is (some? error))))
+      (is (some? error)))))
+
+(deftest handlee-clients-accounts--sad-cases--duplicate-accounts
   (testing "Clients try to create the same account twice"
     (let [email "test@example.net"
           password1 "password one"
