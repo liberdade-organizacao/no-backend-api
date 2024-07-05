@@ -2,7 +2,7 @@ CREATE TABLE IF NOT EXISTS files (
     id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
     filename VARCHAR(64) NOT NULL,
     filepath VARCHAR(128) NOT NULL UNIQUE,
-    contents BYTEA,
+    contents BLOB,
     file_size INTEGER,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT current_timestamp,
     last_updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT current_timestamp,
