@@ -4,8 +4,8 @@ VALUES (
     '%{filepath}',
     %{app_id},
     %{user_id},
-    E'%{contents}'
+    X'%{contents}'
 )
 ON CONFLICT (filepath) DO UPDATE
-SET contents=E'%{contents}'
+SET contents=X'%{contents}'
 RETURNING *;
