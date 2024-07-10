@@ -9,6 +9,9 @@
 (defn- pqbool [b]
   (if b "on" "off"))
 
+(defn- is-regular-client? [state]
+  (= "off" (:is_admin state)))
+
 (defn new-client-auth-key [client-id is-admin]
   (utils/encode-secret {:client_id client-id
                         :is_admin is-admin}))
@@ -715,7 +718,7 @@
   (cond
     (-> state :error some?)
     state
-    (-> state :is_admin false?)
+    (is-regular-client? state)
     (assoc state :error "Not enough permissions")
     :else
     (let [things (:things state)
@@ -763,14 +766,14 @@
   (list-all-things client-auth-key "admins"))
 
 (defn- maybe-promote-to-admin-xf [state]
-  (if (-> state :is_admin false?)
+  (if (is-regular-client? state)
     (assoc state :error "Not enough permissions")
     (let [params {"email" (get state :email nil)}
           response (db/run-operation-first "promote-to-admin.sql" params)]
       state)))
 
 (defn- maybe-demote-admin-xf [state]
-  (if (-> state :is_admin false?)
+  (if (is-regular-client? state)
     (assoc state :error "Not enough permissions")
     (let [params {"email" (get state :email nil)}
           response (db/run-operation-first "demote-admin.sql" params)]
@@ -793,7 +796,7 @@
       format-standard-xf))
 
 (defn- format-check-admin-output-xf [state]
-  {"error" (if (-> state :is_admin false?) "not admin" nil)})
+  {"error" (if (is-regular-client? state) "not admin" nil)})
 
 (defn check-admin [client-auth-key]
   (-> {:error nil
