@@ -2,7 +2,6 @@
 # PROJECT FILES #
 #################
 .env
-.DS_Store
 
 ###########
 # CLOJURE #
