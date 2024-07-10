@@ -7,7 +7,7 @@
   (str fs-folder "/" filename))
 
 (defn write-file [filename contents]
-  (io/make-parents filename)
+  (io/make-parents (filepath filename))
   (spit (filepath filename) contents))
 
 (defn read-file [filename]
