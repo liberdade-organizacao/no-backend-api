@@ -20,3 +20,12 @@
       (is (= contents-read-3 contents-again))
       (is (nil? contents-read-4)))))
 
+(deftest binary-files
+  (testing "can binary files be written and read"
+    (let [raw-contents (slurp "resources/pokemon.jpg")
+          filename "pokemon.jpg"
+          _ (fs/write-file filename raw-contents)
+          read-contents (fs/read-file filename)
+          _ (fs/delete-file filename)]
+      (is (= raw-contents read-contents)))))
+

@@ -14,8 +14,6 @@
                               :dbname "db/database.sqlite"}))
 
 (defn execute-query [query]
-  (println "---")
-  (println query)
   (jdbc/execute! ds [query] {:builder-fn rs/as-unqualified-lower-maps}))
 
 ; ##############

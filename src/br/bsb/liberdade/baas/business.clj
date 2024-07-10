@@ -1,6 +1,7 @@
 (ns br.bsb.liberdade.baas.business
   (:require [br.bsb.liberdade.baas.utils :as utils]
             [br.bsb.liberdade.baas.tar.decompress :as untar]
+            [br.bsb.liberdade.baas.fs :as fs]
             [br.bsb.liberdade.baas.db :as db]))
 
 (def possible-app-roles ["admin" "contributor"])
@@ -323,22 +324,37 @@
   ([app-id filename]
    (str "a" app-id "/" filename)))
 
-(defn- maybe-upload-file-xf [state]
+(defn- save-file-to-filesystem [state]
+  (if (-> state :error some?)
+    state
+    (let [{filepath :filepath
+           contents :contents} state
+          encoded-contents (utils/encode-data contents)]
+      (fs/write-file filepath encoded-contents)
+      (assoc state :contents encoded-contents))))
+
+(defn- save-file-to-database [state]
   (if (-> state :error some?)
     {"error" (:error state)}
     (let [app-id (:app-id state)
           user-id (get state :user-id "NULL")
           filename (:filename state)
           filepath (:filepath state)
-          contents (-> (:contents state)
-                       utils/encode-data)
+          file-size (count (:contents state))
           params {"app_id" app-id
                   "user_id" user-id
                   "filename" filename
                   "filepath" filepath
-                  "contents" contents}
+                  "file_size" file-size}
           result (db/run-operation "upload-file.sql" params)]
       {"error" (when (= 0 (count result)) "Failed to upload file")})))
+
+(defn- maybe-upload-file-xf [state]
+  (if (-> state :error some?)
+    {"error" (:error state)}
+    (-> state
+        save-file-to-filesystem
+        save-file-to-database)))
 
 (defn upload-user-file [user-auth-key filename contents]
   (let [user-info (utils/decode-secret user-auth-key)
@@ -355,10 +371,9 @@
 (defn- maybe-download-file-xf [state]
   (if (-> state :error some?)
     nil
-    (let [params {"filepath" (:filepath state)}
-          result (db/run-operation-first "download-file.sql" params)
-          contents (:contents result)]
-      (when (some? contents)
+    (let [contents (fs/read-file (:filepath state))]
+      (if (nil? contents)
+        nil
         (utils/decode-data contents)))))
 
 (defn download-user-file [user-auth-key filename]
@@ -382,6 +397,7 @@
     state
     (let [filepath (:filepath state)
           params {"filepath" filepath}
+          _ (fs/delete-file filepath)
           result (db/run-operation "delete-file.sql" params)]
       (assoc state :error (if (pos? (count result))
                             nil
