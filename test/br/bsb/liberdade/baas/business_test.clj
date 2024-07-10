@@ -11,7 +11,7 @@
     (try
       (f)
       (catch Exception e
-        (println e))
+        (throw e))
       (finally
         (db/drop-database)))))
 
@@ -84,7 +84,7 @@
       (is (nil? first-error))
       (is (pos? (count apps-before-deletion)))
       (is (nil? second-error))
-      (is (= 0 (count apps-after-deletion))))))
+      (is (zero? (count apps-after-deletion))))))
 
 (deftest handle-apps--sad-cases--unique-app-name
   (testing "Apps from the same owner shouldn't have the same name"
@@ -219,7 +219,7 @@
           invited-contrib-apps (get result "apps" [])]
       (is (pos? (count invited-admin-apps)))
       (is (some? bad-invitation-error))
-      (is (= 0 (count invited-contrib-apps))))))
+      (is (zero? (count invited-contrib-apps))))))
 
 (deftest invite-clients-to-apps--sad-cases--revoked-clients
   (testing "revoked clients should not invite other clients"
@@ -250,7 +250,7 @@
       (is (nil? first-invitation-error))
       (is (nil? revocation-error))
       (is (some? second-invitation-error))
-      (is (-> invokee-apps count (= 0))))))
+      (is (-> invokee-apps count (zero?))))))
 
 (deftest clients-change-password
   (testing "Clients change password -- happy case"
@@ -297,7 +297,7 @@
           apps-after (get result "apps" [])]
       (is (nil? error))
       (is (pos? (count apps-before)))
-      (is (= 0 (count apps-after))))))
+      (is (zero? (count apps-after))))))
 
 (deftest delete-clients--wrong-password
   (testing "Fails to delete account if password is wrong"
@@ -596,7 +596,7 @@
       (is (nil? contrib-error))
       (is (pos? (count contrib-files)))
       (is (some? thirdparty-error))
-      (is (= 0 (count thirdparty-files))))))
+      (is (zero? (count thirdparty-files))))))
 
 (deftest list-app-managers
   (testing "Let clients list managers in an app"
@@ -724,7 +724,7 @@
       (is (= third-gotten-script action-script-A))
       (is (= forth-gotten-script action-script-B))
       (is (= 1 (count action-list-before)))
-      (is (= 0 (count action-list-after)))
+      (is (zero? (count action-list-after)))
       (is (nil? deletion-error)))))
 
 (deftest admin-test
