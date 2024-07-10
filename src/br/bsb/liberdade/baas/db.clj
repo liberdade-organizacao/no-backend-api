@@ -14,15 +14,16 @@
                               :dbname "db/database.sqlite"}))
 
 (defn execute-query [query]
-  (jdbc/execute! ds [query] {:builder-fn rs/as-unqualified-lower-maps}))
+  (with-open [connection (jdbc/get-connection ds)]
+    (jdbc/execute! connection
+                   ["PRAGMA foreign_keys = ON;"])
+    (jdbc/execute! connection
+                   [query]
+                   {:builder-fn rs/as-unqualified-lower-maps})))
 
 ; ##############
 ; # MIGRATE UP #
 ; ##############
-
-(defn spy [x]
-  (println x)
-  x)
 
 (defn- check-if-migration-exists [migration]
   (-> (strint/strint (get sql-operations "check-if-migration-exists.sql")
