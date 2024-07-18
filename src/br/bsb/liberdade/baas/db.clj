@@ -10,16 +10,19 @@
 (def sql-operations-folder (str sql-resources-folder "/operations"))
 (def sql-migrations (utils/read-sql-dir sql-migrations-folder))
 (def sql-operations (utils/read-sql-dir sql-operations-folder))
-(def ds (jdbc/get-datasource {:dbtype "sqlite"
-                              :dbname "db/database.sqlite"}))
+(def ds (jdbc/get-datasource {:dbtype "h2"
+                              :dbname "db/database.h2"}))
 
-(defn execute-query [query]
+#_(defn execute-query [query]
   (with-open [connection (jdbc/get-connection ds)]
     (jdbc/execute! connection
                    ["PRAGMA foreign_keys = ON;"])
     (jdbc/execute! connection
                    [query]
                    {:builder-fn rs/as-unqualified-lower-maps})))
+
+(defn execute-query [query]
+  (jdbc/execute! ds [query] {:builder-fn rs/as-unqualified-lower-maps}))
 
 ; ##############
 ; # MIGRATE UP #

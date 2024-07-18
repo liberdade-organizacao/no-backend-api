@@ -31,7 +31,7 @@
           result (db/run-operation-first "create-client-account.sql" params)]
       {"auth_key" (new-client-auth-key (:id result) (:is_admin result))
        "error" nil})
-    (catch org.sqlite.SQLiteException e
+    (catch Exception e
       {"auth_key" nil
        "error" "Email already exists"})))
 
@@ -58,7 +58,7 @@
             app-id (:id result)
             next-state (assoc state :app-id app-id)]
         next-state)
-      (catch org.sqlite.SQLiteException e
+      (catch Exception e
         {:error e}))))
 
 (defn- invite-to-app-xf [state]
