@@ -72,3 +72,7 @@ lint:
 repl:
 	lein repl
 
+.PHONY: outdated
+outdated:
+	lein ancient check
+
