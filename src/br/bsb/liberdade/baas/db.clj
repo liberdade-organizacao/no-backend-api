@@ -10,25 +10,28 @@
 (def sql-operations-folder (str sql-resources-folder "/operations"))
 (def sql-migrations (utils/read-sql-dir sql-migrations-folder))
 (def sql-operations (utils/read-sql-dir sql-operations-folder))
-(def db (or (System/getenv "JDBC_DATABASE_URL")
-            "jdbc:postgresql://localhost:5434/baas?user=liberdade&password=password"))
-(def ds (jdbc/get-datasource db))
-(Class/forName "org.postgresql.Driver")  ; required to get the driver working properly
+(def ds (jdbc/get-datasource {:dbtype "sqlite"
+                              :dbname "db/database.sqlite"}))
 
 (defn execute-query [query]
-  (jdbc/execute! ds [query] {:builder-fn rs/as-unqualified-lower-maps}))
+  (with-open [connection (jdbc/get-connection ds)]
+    (jdbc/execute! connection
+                   ["PRAGMA foreign_keys = ON;"])
+    (jdbc/execute! connection
+                   [query]
+                   {:builder-fn rs/as-unqualified-lower-maps})))
 
 ; ##############
 ; # MIGRATE UP #
 ; ##############
 
 (defn- check-if-migration-exists [migration]
-  (->> {"migration" migration}
-       (strint/strint (get sql-operations "check-if-migration-exists.sql"))
-       execute-query
-       first
-       :count
-       pos?))
+  (-> (strint/strint (get sql-operations "check-if-migration-exists.sql")
+                     {"migration" migration})
+      execute-query
+      first
+      (get (keyword "count(*)"))
+      pos?))
 
 (defn- run-migration [migration-file-name]
   (->> migration-file-name
@@ -70,23 +73,21 @@
       first
       (get :name)))
 
+(defn undo-migration [migration]
+  (execute-query (get sql-migrations (str migration ".down.sql")))
+  (execute-query (strint/strint (get sql-operations "remove-migration.sql")
+                                {"migration" migration})))
+
 (defn undo-last-migration []
-  (let [last-migration (get-last-migration)]
-    (execute-query (get sql-migrations (str last-migration ".down.sql")))
-    (execute-query (get sql-operations "remove-last-migration.sql"))))
+  (-> (get-last-migration) undo-migration))
 
 (defn undo-migrations []
-  (let [files (->> sql-migrations-folder
-                   utils/list-dir
-                   (filter #(re-find #"(.*?)\.down\.sql$" %))
-                   sort
-                   reverse)
-        limit (count files)]
-    (loop [n 0]
-      (when (< n limit)
-        (execute-query (get sql-migrations (nth files n)))
-        (execute-query (get sql-operations "remove-last-migration.sql"))
-        (recur (inc n))))))
+  (->> (keys sql-migrations)
+       (filter #(re-find #"(.*?)\.down\.sql$" %))
+       (map #(first (clojure.string/split % #"\.")))
+       sort
+       reverse
+       (mapv undo-migration)))
 
 (defn check-health []
   (try
@@ -99,13 +100,13 @@
         "ko"))
     (catch Exception ex
       "ko")))
+
 (defn- get-last-migration []
   (-> sql-operations
       (get "get-last-migration.sql")
       execute-query
       first
       (get :name)))
-
 
 ; #####################
 ; # GLOBAL OPERATIONS #

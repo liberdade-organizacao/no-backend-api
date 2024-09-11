@@ -1,12 +1,16 @@
 (ns br.bsb.liberdade.baas.business
   (:require [br.bsb.liberdade.baas.utils :as utils]
             [br.bsb.liberdade.baas.tar.decompress :as untar]
+            [br.bsb.liberdade.baas.fs :as fs]
             [br.bsb.liberdade.baas.db :as db]))
 
 (def possible-app-roles ["admin" "contributor"])
 
 (defn- pqbool [b]
   (if b "on" "off"))
+
+(defn- is-regular-client? [state]
+  (= "off" (:is_admin state)))
 
 (defn new-client-auth-key [client-id is-admin]
   (utils/encode-secret {:client_id client-id
@@ -27,7 +31,7 @@
           result (db/run-operation-first "create-client-account.sql" params)]
       {"auth_key" (new-client-auth-key (:id result) (:is_admin result))
        "error" nil})
-    (catch org.postgresql.util.PSQLException e
+    (catch org.sqlite.SQLiteException e
       {"auth_key" nil
        "error" "Email already exists"})))
 
@@ -54,7 +58,7 @@
             app-id (:id result)
             next-state (assoc state :app-id app-id)]
         next-state)
-      (catch org.postgresql.util.PSQLException e
+      (catch org.sqlite.SQLiteException e
         {:error e}))))
 
 (defn- invite-to-app-xf [state]
@@ -323,22 +327,37 @@
   ([app-id filename]
    (str "a" app-id "/" filename)))
 
-(defn- maybe-upload-file-xf [state]
+(defn- save-file-to-filesystem [state]
+  (if (-> state :error some?)
+    state
+    (let [{filepath :filepath
+           contents :contents} state
+          encoded-contents (utils/encode-data contents)]
+      (fs/write-file filepath encoded-contents)
+      (assoc state :contents encoded-contents))))
+
+(defn- save-file-to-database [state]
   (if (-> state :error some?)
     {"error" (:error state)}
     (let [app-id (:app-id state)
           user-id (get state :user-id "NULL")
           filename (:filename state)
           filepath (:filepath state)
-          contents (-> (:contents state)
-                       utils/encode-data)
+          file-size (count (:contents state))
           params {"app_id" app-id
                   "user_id" user-id
                   "filename" filename
                   "filepath" filepath
-                  "contents" contents}
+                  "file_size" file-size}
           result (db/run-operation "upload-file.sql" params)]
       {"error" (when (= 0 (count result)) "Failed to upload file")})))
+
+(defn- maybe-upload-file-xf [state]
+  (if (-> state :error some?)
+    {"error" (:error state)}
+    (-> state
+        save-file-to-filesystem
+        save-file-to-database)))
 
 (defn upload-user-file [user-auth-key filename contents]
   (let [user-info (utils/decode-secret user-auth-key)
@@ -355,10 +374,9 @@
 (defn- maybe-download-file-xf [state]
   (if (-> state :error some?)
     nil
-    (let [params {"filepath" (:filepath state)}
-          result (db/run-operation-first "download-file.sql" params)
-          contents (:contents result)]
-      (when (some? contents)
+    (let [contents (fs/read-file (:filepath state))]
+      (if (nil? contents)
+        nil
         (utils/decode-data contents)))))
 
 (defn download-user-file [user-auth-key filename]
@@ -382,6 +400,7 @@
     state
     (let [filepath (:filepath state)
           params {"filepath" filepath}
+          _ (fs/delete-file filepath)
           result (db/run-operation "delete-file.sql" params)]
       (assoc state :error (if (pos? (count result))
                             nil
@@ -699,7 +718,7 @@
   (cond
     (-> state :error some?)
     state
-    (-> state :is_admin false?)
+    (is-regular-client? state)
     (assoc state :error "Not enough permissions")
     :else
     (let [things (:things state)
@@ -747,14 +766,14 @@
   (list-all-things client-auth-key "admins"))
 
 (defn- maybe-promote-to-admin-xf [state]
-  (if (-> state :is_admin false?)
+  (if (is-regular-client? state)
     (assoc state :error "Not enough permissions")
     (let [params {"email" (get state :email nil)}
           response (db/run-operation-first "promote-to-admin.sql" params)]
       state)))
 
 (defn- maybe-demote-admin-xf [state]
-  (if (-> state :is_admin false?)
+  (if (is-regular-client? state)
     (assoc state :error "Not enough permissions")
     (let [params {"email" (get state :email nil)}
           response (db/run-operation-first "demote-admin.sql" params)]
@@ -777,7 +796,7 @@
       format-standard-xf))
 
 (defn- format-check-admin-output-xf [state]
-  {"error" (if (-> state :is_admin false?) "not admin" nil)})
+  {"error" (if (is-regular-client? state) "not admin" nil)})
 
 (defn check-admin [client-auth-key]
   (-> {:error nil
