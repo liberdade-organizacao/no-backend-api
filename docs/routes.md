@@ -1,0 +1,42 @@
+# Routes to Implement
+
+- [ ] `POST /clients/signup`
+- [ ] `POST /clients/login`
+- [ ] `POST /apps`
+- [ ] `GET /apps`
+- [ ] `DELETE /apps`
+- [ ] `POST /apps/invite`
+- [ ] `POST /apps/revoke`
+- [ ] `POST /clients/password`
+- [ ] `DELETE /clients`
+- [ ] `POST /users/signup`
+- [ ] `POST /users/login`
+- [ ] `DELETE /users`
+- [ ] `GET /apps/users`
+- [ ] `POST /users/password`
+- [ ] `POST /users/files`
+- [ ] `GET /users/files`
+- [ ] `GET /users/files/list`
+- [ ] `DELETE /users/files`
+- [ ] `POST /apps/files`
+- [ ] `GET /apps/files`
+- [ ] `DELETE /apps/files`
+- [ ] `GET /apps/files/list`
+- [ ] `GET /apps/clients`
+- [ ] `POST /apps/clients/revoke`
+- [ ] `POST /actions`
+- [ ] `PATCH /actions`
+- [ ] `POST /actions/bulk`
+- [ ] `GET /actions`
+- [ ] `GET /actions/list`
+- [ ] `DELETE /actions`
+- [ ] `POST /actions/run`
+- [ ] `GET /clients/all`
+- [ ] `GET /apps/all`
+- [ ] `GET /files/all`
+- [ ] `GET /admins/all`
+- [ ] `POST /admins`
+- [ ] `DELETE /admins`
+- [ ] `GET /admins/check`
+- [ ] `GET /health`
+
