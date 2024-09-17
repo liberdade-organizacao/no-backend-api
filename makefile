@@ -3,13 +3,9 @@ API_PORT=7780
 .PHONY: default
 default: build
 
-.PHONY: psql
-psql:
-	psql -h localhost -p 5434 -d baas -U liberdade -W
-
 .PHONY: test
 test:
-	lein test
+	echo "TODO go test"
 
 .PHONY: integration-test
 integration-test:
@@ -23,18 +19,7 @@ integration-test:
 
 .PHONY: build
 build: test
-	lein uberjar
-
-.PHONY: docker-build
-docker-build:  # build
-	docker build -t baas-api . 
-
-.PHONY: docker-run
-docker-run: docker-build
-	docker run -p 127.0.0.1:7780:7780 baas-api
-
-.PHONY: docker
-docker: docker-run
+	go build -tags "sqlite_foreign_keys" -o main.exe main/main.go
 
 .PHONY: install
 install: build
