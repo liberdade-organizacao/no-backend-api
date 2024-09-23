@@ -5,7 +5,9 @@ default: build
 
 .PHONY: test
 test:
-	echo "TODO go test"
+	rm -f db/db.sqlite
+	touch db/db.sqlite
+	go test ./model/*.go
 
 .PHONY: integration-test
 integration-test:
