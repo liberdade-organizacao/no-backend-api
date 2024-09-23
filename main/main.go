@@ -14,7 +14,7 @@ func main() {
 		panic(errors.New("Not enough arguments"))
 	}
 
-	db, err := model.NewDatabaseInstance()
+	db, err := model.NewDatabaseInstance("./db/db.sqlite", "./resources")
 	if err != nil {
 		panic(err)
 	}
