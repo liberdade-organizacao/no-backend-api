@@ -8,6 +8,7 @@ test:
 	rm -f db/db.sqlite
 	touch db/db.sqlite
 	go test ./model/*.go
+	go test ./controller/*.go
 
 .PHONY: integration-test
 integration-test:
