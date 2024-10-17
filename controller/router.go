@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"fmt"
 	"io"
+	"encoding/json"
 	"github.com/liberdade-organizacao/no-backend-api/business"
 	"github.com/liberdade-organizacao/no-backend-api/model"
 )
@@ -19,7 +20,7 @@ func NewRouter(config map[string]string, db *model.Database) *Router {
 		Database: db,
 	}
 	router := Router {
-		Context: context,
+		Context: &context,
 		Database: db,
 		Port: config["port"],
 	}
@@ -31,7 +32,17 @@ func (router *Router) Start() {
 	http.HandleFunc("/clients/signup", router.HandleSignup)
 	http.HandleFunc("/clients/login", router.HandleLogin)
 
-	http.ListenAndServer(router.Port, nil)
+	http.ListenAndServe(router.Port, nil)
+}
+
+func ParseJson(inlet []byte) (map[string]any, error) {
+	outlet := make(map[string]any)
+	err := json.Unmarshal(inlet, &outlet)
+	if err != nil {
+		return nil, err
+	} else {
+		return outlet, nil
+	}
 }
 
 /* ############ *
@@ -50,19 +61,35 @@ func (router *Router) HandleSignup(
 	// performing initial validations
 	if request.Method != "POST" {
 		io.WriteString(responseWriter, `{"error": "invalid method"}`)
+		// TODO set status code to 405
 		return
 	}
 
-	// TODO complete me!
-	email := ""
-	password := ""
-	_, err := router.Context.NewClient(email, password)
+	// read
+	defer request.Body.Close()
+	bodyBytes, err := io.ReadAll(request.Body)
+	if err != nil {
+		io.WriteString(responseWriter, `{"error": "bad request"}`)
+		// TODO set status code to 400
+		return
+	}
+	body, err := ParseJson(bodyBytes)
+	email := body["email"].(string)
+	password := body["password"].(string)
+
+	// evaluate
+	_, err = router.Context.NewClient(email, password)
 	if err != nil {
 		response := fmt.Sprintf("{\"error\": \"%s\"}", err)
 		io.WriteString(responseWriter, response)
+		// TODO set status code to 403
 		return
 	}
-	io.WriteString(responseWriter, `{"result": "OK"}`)
+
+	// print
+	// TODO write proper response back
+	response := fmt.Sprintf(`{"email": "%s", "count": %d}`, email, len(password))
+	io.WriteString(responseWriter, response)
 	return
 }
 
