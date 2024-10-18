@@ -86,7 +86,7 @@ func (router *Router) HandleSignup(
 	password := body["password"].(string)
 
 	// evaluate
-	_, err = router.Context.NewClient(email, password)
+	result, err := router.Context.NewClient(email, password, false)
 	if err != nil {
 		responseWriter.WriteHeader(403)
 		response := fmt.Sprintf("{\"error\": \"%s\"}", err)
@@ -95,9 +95,8 @@ func (router *Router) HandleSignup(
 	}
 
 	// print
-	// TODO write proper response back
+	response, _ := WriteJson(result)
 	responseWriter.WriteHeader(200)
-	response := fmt.Sprintf(`{"email": "%s", "count": %d}`, email, len(password))
 	io.WriteString(responseWriter, response)
 	return
 }
