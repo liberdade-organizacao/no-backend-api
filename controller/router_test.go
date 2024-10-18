@@ -35,3 +35,23 @@ func TestParseJson(t *testing.T) {
 	}
 }
 
+func TestWriteJson(t *testing.T) {
+	expectedResult := `{"age":1000,"hobbies":["bass"],"name":"Marceline"}`
+	obj := map[string]any {
+		"name": "Marceline",
+		"age": 1000,
+		"hobbies": []any {
+			"bass",
+		},
+	}
+	obtainedResult, err := WriteJson(obj)
+	if err != nil {
+		t.Fatalf("Failed to write JSONL: %s", err)
+		return
+	}
+	if expectedResult != obtainedResult {
+		t.Fatalf("Wrote wrong JSON\nexpected: %s\nobtained: %s", expectedResult, obtainedResult)
+		return
+	}
+}
+
