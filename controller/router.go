@@ -45,6 +45,14 @@ func ParseJson(inlet []byte) (map[string]any, error) {
 	}
 }
 
+func WriteJson(obj map[string]any) (string, error) {
+	bytes, err := json.Marshal(obj)
+	if err != nil {
+		return "", err
+	}
+	return string(bytes), nil
+}
+
 /* ############ *
  * # HANDLERS # *
  * ############ */
@@ -60,8 +68,8 @@ func (router *Router) HandleSignup(
 ) {
 	// performing initial validations
 	if request.Method != "POST" {
+		responseWriter.WriteHeader(405)
 		io.WriteString(responseWriter, `{"error": "invalid method"}`)
-		// TODO set status code to 405
 		return
 	}
 
@@ -69,8 +77,8 @@ func (router *Router) HandleSignup(
 	defer request.Body.Close()
 	bodyBytes, err := io.ReadAll(request.Body)
 	if err != nil {
+		responseWriter.WriteHeader(400)
 		io.WriteString(responseWriter, `{"error": "bad request"}`)
-		// TODO set status code to 400
 		return
 	}
 	body, err := ParseJson(bodyBytes)
@@ -80,14 +88,15 @@ func (router *Router) HandleSignup(
 	// evaluate
 	_, err = router.Context.NewClient(email, password)
 	if err != nil {
+		responseWriter.WriteHeader(403)
 		response := fmt.Sprintf("{\"error\": \"%s\"}", err)
 		io.WriteString(responseWriter, response)
-		// TODO set status code to 403
 		return
 	}
 
 	// print
 	// TODO write proper response back
+	responseWriter.WriteHeader(200)
 	response := fmt.Sprintf(`{"email": "%s", "count": %d}`, email, len(password))
 	io.WriteString(responseWriter, response)
 	return
