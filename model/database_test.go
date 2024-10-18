@@ -16,5 +16,11 @@ func TestIsTrue(t *testing.T) {
 		t.Fatalf("Failed to migrate up: %s\n", err)
 		return
 	}
+
+	err = db.MigrateDown()
+	if err != nil {
+		t.Fatalf("Failed to migrate down: %s\n", err)
+		return
+	}
 }
 
