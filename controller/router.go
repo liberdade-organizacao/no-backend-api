@@ -2,7 +2,6 @@ package controller
 
 import (
 	"net/http"
-	"fmt"
 	"io"
 	"encoding/json"
 	"github.com/liberdade-organizacao/no-backend-api/business"
@@ -53,6 +52,17 @@ func WriteJson(obj map[string]any) (string, error) {
 	return string(bytes), nil
 }
 
+func SendResponse(
+	request *http.Request,
+	responseWriter http.ResponseWriter,
+	result map[string]any,
+	statusCode int,
+) {
+	response, _ := WriteJson(result)
+	responseWriter.WriteHeader(statusCode)
+	io.WriteString(responseWriter, response)
+}
+
 /* ############ *
  * # HANDLERS # *
  * ############ */
@@ -68,8 +78,14 @@ func (router *Router) HandleSignup(
 ) {
 	// performing initial validations
 	if request.Method != "POST" {
-		responseWriter.WriteHeader(405)
-		io.WriteString(responseWriter, `{"error": "invalid method"}`)
+		SendResponse(
+			request,
+			responseWriter,
+			map[string]any {
+				"error": "invalid method", 
+			},
+			405,
+		)
 		return
 	}
 
@@ -77,8 +93,14 @@ func (router *Router) HandleSignup(
 	defer request.Body.Close()
 	bodyBytes, err := io.ReadAll(request.Body)
 	if err != nil {
-		responseWriter.WriteHeader(400)
-		io.WriteString(responseWriter, `{"error": "bad request"}`)
+		SendResponse(
+			request,
+			responseWriter,
+			map[string]any {
+				"error": "bad request",
+			},
+			400,
+		)
 		return
 	}
 	body, err := ParseJson(bodyBytes)
@@ -88,16 +110,19 @@ func (router *Router) HandleSignup(
 	// evaluate
 	result, err := router.Context.NewClient(email, password, false)
 	if err != nil {
-		responseWriter.WriteHeader(403)
-		response := fmt.Sprintf("{\"error\": \"%s\"}", err)
-		io.WriteString(responseWriter, response)
+		SendResponse(
+			request,
+			responseWriter,
+			map[string]any {
+				"error": err.Error(), 
+			},
+			403,
+		)
 		return
 	}
 
 	// print
-	response, _ := WriteJson(result)
-	responseWriter.WriteHeader(200)
-	io.WriteString(responseWriter, response)
+	SendResponse(request, responseWriter, result, 200)
 	return
 }
 

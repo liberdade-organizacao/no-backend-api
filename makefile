@@ -9,6 +9,7 @@ test:
 	touch db/db.sqlite
 	go test ./model/*.go
 	go test ./controller/*.go
+	go test ./business/*.go
 
 .PHONY: integration-test
 integration-test:
