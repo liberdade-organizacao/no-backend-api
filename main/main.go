@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"github.com/liberdade-organizacao/no-backend-api/controller"
 	"github.com/liberdade-organizacao/no-backend-api/model"
 )
 
@@ -22,13 +23,15 @@ func main() {
 	switch op := args[0]; op {
 	case "migrate_up":
 		db.MigrateUp()
-		db.Close()	
+		db.Close()
+	case "up":
+		// TODO load this from the environment
+		config := make(map[string]string)
+		config["port"] = ":7780"
+		router := controller.NewRouter(config, db)
+		router.Start()
 	default:
 		fmt.Printf("Unknown argument %s\n", op)
 	}
-
-	// TODO load database
-	// TODO create controller to handle connections
-	// TODO start server
 }
 
