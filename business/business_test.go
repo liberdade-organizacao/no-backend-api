@@ -15,7 +15,7 @@ func setup() *Context {
 		panic(err)
 	}
 	context := Context {
-		Database: &db,
+		Database: db,
 	}
 	return &context
 }
@@ -25,7 +25,8 @@ func teardown(context *Context) {
 	if err != nil {
 		panic(err)
 	}
-	return context.Database.Close()	
+	context.Database.Close()	
+	return
 }
 
 func TestHandleClientsAccounts(t *testing.T) {

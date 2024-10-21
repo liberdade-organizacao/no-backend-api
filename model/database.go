@@ -26,23 +26,20 @@ func NewDatabaseInstance(dbFile, resourcesFolder string) (*Database, error) {
 	// caching operations
 	operationsFolder := fmt.Sprintf("%s/sql/operations", resourcesFolder)
 	operations := make(map[string]string)
-	allFiles, err := loadAllFilesFromDir(operationsFolder)
+	allFiles, err := loadAllFilesInDir(operationsFolder)
 
 	if err != nil {
 		return nil, err
 	}
 
-	for _, file := range allFiles {
-		// TODO cache all SQL used in operations
-		filename := file.Name()
+	for _, filename := range allFiles {
 		filepath := fmt.Sprintf("%s/%s", operationsFolder, filename)
 		rawBytes, err := ioutil.ReadFile(filepath)
-
 		if err != nil {
-			return err
+			return nil, err
 		}
 
-		operations[file] = string(rawBytes)
+		operations[filename] = string(rawBytes)
 	}
 
 	// wrapping up
@@ -62,10 +59,16 @@ func (db *Database) Execute(query string) ([]interface{}, error) {
 }
 
 func loadAllFilesInDir(dirname string) ([]string, error) {
-	allFiles, err := ioutil.ReadDir(dirname)
+	allFileInfos, err := ioutil.ReadDir(dirname)
 	if err != nil {
 		return nil, err
 	}
+
+	allFiles := make([]string, len(allFileInfos))
+	for i, fileInfo := range allFileInfos {
+		allFiles[i] = fileInfo.Name()
+	}
+
 	return allFiles, nil
 }
 
@@ -82,9 +85,7 @@ func (db *Database) Migrate(direction string) error {
 	files := make([]string, 0)
 	suffix := fmt.Sprintf("%s.sql", direction)
 
-	for _, file := range allFiles {
-		filename := file.Name()
-
+	for _, filename := range allFiles {
 		if strings.HasSuffix(filename, suffix) {
 			filename = fmt.Sprintf("%s/%s", dirname, filename)
 			files = append(files, filename)

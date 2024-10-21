@@ -4,7 +4,7 @@ import (
 	"testing"
 )
 
-func TestIsTrue(t *testing.T) {
+func TestDatabaseCanMigrate(t *testing.T) {
 	db, err := NewDatabaseInstance("../db/db.sqlite", "../resources")
 	if err != nil {
 		t.Fatalf("failed to start database: %s\n", err)
