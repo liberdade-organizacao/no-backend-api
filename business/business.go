@@ -15,6 +15,10 @@ func (context *Context) Free() error {
 	return context.Database.Close()
 }
 
+func newClientAuthKey(clientId int, isAdmin bool) string {
+	return ""
+}
+
 // TODO complete me!
 // Returns `auth_key`
 func (context *Context) NewClient(email, password string, isAdmin bool) (map[string]any, error) {
