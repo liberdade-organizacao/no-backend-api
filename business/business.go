@@ -2,6 +2,7 @@ package business
 
 import (
 	"errors"
+	"fmt"
 	"github.com/liberdade-organizacao/no-backend-api/model"
 	"github.com/liberdade-organizacao/no-backend-api/utils"
 )
@@ -28,14 +29,24 @@ func (context *Context) NewClient(email, password string, isAdmin bool) (map[str
 		return nil, err
 	}
 
-	_, err = context.Database.Execute(query)
+	rows, err := context.Database.Query(query)
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
+	var resultId int = -1
+	var resultIsAdmin bool = false
+	for rows.Next() {
+		err = rows.Scan(&resultId, &resultIsAdmin)
+		if err != nil {
+			return nil, err
+		}
+	}
 
-	// TODO parse results
-
-	return nil, errors.New("NOT IMPLEMENTED YET")
+	// TODO wrap id and is_admin into auth_key
+	
+	errMsg := fmt.Sprintf("NOT IMPLEMENTED YET BUT GOT %d, %v", resultId, resultIsAdmin)
+	return nil, errors.New(errMsg)
 }
 
 // Returns `auth_key`

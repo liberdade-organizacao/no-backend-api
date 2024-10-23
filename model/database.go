@@ -52,10 +52,20 @@ func NewDatabaseInstance(dbFile, resourcesFolder string) (*Database, error) {
 	return &db, nil
 }
 
-func (db *Database) Execute(query string) ([]interface{}, error) {
-	// TODO make this work actual queries
+func (db *Database) Execute(query string) error {
 	_, err := db.Connection.Exec(query)
-	return nil, err
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (db *Database) Query(query string) (*sql.Rows, error) {
+	rows, err := db.Connection.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	return rows, nil
 }
 
 func loadAllFilesInDir(dirname string) ([]string, error) {
@@ -105,7 +115,7 @@ func (db *Database) Migrate(direction string) error {
 			return err
 		}
 
-		_, err = db.Execute(string(rawBytes))
+		err = db.Execute(string(rawBytes))
 		if err != nil {
 			return err
 		}
