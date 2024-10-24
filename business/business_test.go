@@ -44,11 +44,26 @@ func TestHandleClientsAccounts(t *testing.T) {
 	}
 	firstAuthKey := result["auth_key"].(string)
 	if firstAuthKey == "" {
-		t.Fatal("Failed to generate auth key")
+		t.Fatal("Failed to generate auth key after creation")
 		return
 	}
 
-	// TODO login
+	// login
+	result, err = context.AuthClient(email, password)
+	if err != nil {
+		t.Fatalf("Failed to authorize client: %s", err)
+		return
+	}
+	secondAuthKey := result["auth_key"].(string)
+	if secondAuthKey == "" {
+		t.Fatal("Failed to generate auth key after auth")
+		return
+	}
+	if firstAuthKey != secondAuthKey {
+		t.Fatal("different auth keys were generated")
+		return
+	}
+
 	// TODO gracefully fail repeated signup
 	// TODO gracefully fail login
 }
