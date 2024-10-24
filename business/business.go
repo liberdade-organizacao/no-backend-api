@@ -2,7 +2,6 @@ package business
 
 import (
 	"errors"
-	"fmt"
 	"github.com/liberdade-organizacao/no-backend-api/model"
 	"github.com/liberdade-organizacao/no-backend-api/utils"
 )
@@ -15,11 +14,18 @@ func (context *Context) Free() error {
 	return context.Database.Close()
 }
 
-func newClientAuthKey(clientId int, isAdmin bool) string {
-	return ""
+func newClientAuthKey(clientId int, isAdmin bool) (string, error) {
+	message := map[string]any {
+		"client_id": clientId,
+		"is_admin": isAdmin,
+	}
+	authKey, err := utils.EncodeSecret(message)
+	if err != nil {
+		return "", err
+	}
+	return authKey, nil
 }
 
-// TODO complete me!
 // Returns `auth_key`
 func (context *Context) NewClient(email, password string, isAdmin bool) (map[string]any, error) {
 	rawSql := context.Database.Operations["create-client-account.sql"]
@@ -47,10 +53,16 @@ func (context *Context) NewClient(email, password string, isAdmin bool) (map[str
 		}
 	}
 
-	// TODO wrap id and is_admin into auth_key
+	authKey, err := newClientAuthKey(resultId, resultIsAdmin)
+	if err != nil {
+		return nil, err
+	}
+
+	outlet := map[string]any {
+		"auth_key": authKey,
+	}
 	
-	errMsg := fmt.Sprintf("NOT IMPLEMENTED YET BUT GOT %d, %v", resultId, resultIsAdmin)
-	return nil, errors.New(errMsg)
+	return outlet, nil
 }
 
 // Returns `auth_key`
