@@ -3,7 +3,7 @@
             [br.bsb.liberdade.baas.utils :as utils]))
 
 (def random-token
-  "XZ69WpRTqZgEOqCJqaOK4iOKGLkg505VSASQ8MMGWs3mn1p6U81FvB5rSLpKlIjkZTUIBC6KiHIboy")
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTIzNH0.rWp8vvb4aDZAGcHEYjhCe9qaaf8mSyvyLeyC1QuZWU0")
 
 (deftest token-handling
   (testing "can encode and decode data"
