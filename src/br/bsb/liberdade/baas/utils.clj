@@ -1,23 +1,18 @@
 (ns br.bsb.liberdade.baas.utils
-  (:require [clj-branca.core :as branca]
-            [clojure.edn :as edn]
+  (:require [clojure.edn :as edn]
+            [buddy.sign.jwt :as jwt]
             [buddy.core.hash :as hash]
             [buddy.core.codecs :as codecs])
   (:import java.util.Base64))
 
-(def salt (or (System/getenv "SALT") "supersecretkeyyoushouldnotcommit"))
+(def salt (-> (hash/md5 (or (System/getenv "SALT") "SALT")) (codecs/bytes->hex)))
 
 (defn encode-secret [data]
-  (->> data
-       str
-       (branca/encode salt)))
+  (jwt/sign data salt))
 
 (defn decode-secret [secret]
   (try
-    (->> secret
-         (branca/decode salt)
-         (String.)
-         edn/read-string)
+    (jwt/unsign secret salt)
     (catch clojure.lang.ExceptionInfo e nil)))
 
 (defn hide [secret]
