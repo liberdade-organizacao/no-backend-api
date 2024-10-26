@@ -2,7 +2,7 @@ services:
   db:
     image: postgres:11.5-alpine
     volumes:
-      - db-data:/var/lib/postgresql/data
+      - ./db:/var/lib/postgresql/data
     ports:
       - "5434:5432"
     environment:
@@ -17,5 +17,5 @@ services:
       - .env
 
 volumes:
-  db-data:
+  db: {}
 

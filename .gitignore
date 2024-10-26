@@ -2,6 +2,7 @@
 # PROJECT FILES #
 #################
 .env
+db/
 
 ###########
 # CLOJURE #
@@ -21,4 +22,5 @@ pom.xml.asc
 .nrepl-port
 .cpcache/
 .clj-kondo/
+.lsp/
 
