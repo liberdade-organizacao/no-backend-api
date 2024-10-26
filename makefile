@@ -26,7 +26,7 @@ build: test
 	lein uberjar
 
 .PHONY: docker-build
-docker-build:  # build
+docker-build:  build
 	docker build -t baas-api . 
 
 .PHONY: docker-run
@@ -35,6 +35,14 @@ docker-run: docker-build
 
 .PHONY: docker
 docker: docker-run
+
+.PHONY: docker-save
+docker-save: docker-build
+	docker save -o baas-api.tar baas-api
+
+.PHONY: docker-load
+docker-load:
+	docker load -i baas-api.tar
 
 .PHONY: install
 install: build

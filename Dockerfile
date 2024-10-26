@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-FROM clojure
+FROM eclipse-temurin:17-jre-alpine
 # TODO build jarfile before copying it to docker file
 # RUN lein uberjar
 COPY target/uberjar/br.bsb.liberdade.baas.api.jar .
