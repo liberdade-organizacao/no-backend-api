@@ -2,6 +2,7 @@
 # PROJECT FILES #
 #################
 .env
+*.log
 
 ###########
 # CLOJURE #

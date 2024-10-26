@@ -36,3 +36,9 @@
             (recur (+ 1 i)
                    (utils/encode-secret decoded))))))))
 
+(deftest measurability
+  (testing "encoded data can be measured"
+    (let [data "abcdefghij" 
+          encoded (utils/encode-data data)
+          length (count encoded)]
+      (is (= 16 length)))))
