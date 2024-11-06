@@ -15,6 +15,7 @@
                  [com.github.seancorfield/next.jdbc "1.2.753"]
                  [org.postgresql/postgresql "42.2.10"]
                  [middlesphere/clj-compress "0.1.0"]
+                 [clojure-msgpack "1.2.1"]
                  [clj-http "3.12.3"]]
   :min-lein-version "2.9.8"
   :main ^:skip-aot br.bsb.liberdade.baas.api
