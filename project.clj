@@ -15,6 +15,7 @@
                  [com.github.seancorfield/next.jdbc "1.3.939"]
                  [org.xerial/sqlite-jdbc "3.46.1.0"]
                  [middlesphere/clj-compress "0.1.0"]
+                 [clojure-msgpack "1.2.1"]
                  [clj-http "3.13.0"]]
   :min-lein-version "2.9.8"
   :main ^:skip-aot br.bsb.liberdade.baas.api
