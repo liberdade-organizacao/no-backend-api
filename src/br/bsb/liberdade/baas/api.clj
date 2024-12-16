@@ -4,8 +4,6 @@
             [clojure.string :as string]
             [org.httpkit.server :as server]
             [compojure.core :refer :all]
-            [compojure.route :as route]
-            [ring.middleware.defaults :refer :all]
             [jumblerg.middleware.cors :refer [wrap-cors]]
             [selmer.parser :refer :all]
             [br.bsb.liberdade.baas.db :as db]
@@ -353,7 +351,9 @@
 
 (defn- run []
   (let [port (Integer/parseInt (or (System/getenv "API_PORT") "7780"))]
-    (server/run-server (wrap-cors #'app-routes #".*" (assoc site-defaults :security nil)) {:port port})
+    (server/run-server (wrap-cors #'app-routes #".*"
+                                  {:security nil})
+                       {:port port})
     (println (str "Listening at http://localhost:" port "/"))))
 
 (defn -main [& args]
