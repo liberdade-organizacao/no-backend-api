@@ -84,3 +84,18 @@ repl:
 outdated:
 	lein ancient check
 
+.PHONY: native-setup
+native-setup: build
+	gu install native-image
+
+.PHONY: native
+native:
+	native-image \
+		-O3 \
+		--verbose \
+		--enable-url-protocols=http,https \
+		--initialize-at-build-time \
+		-jar ./target/uberjar/br.bsb.liberdade.baas.api.jar \
+		-cp ~/.m2/repository/org/xerial/sqlite-jdbc/3.46.1.0/sqlite-jdbc-3.46.1.0.jar:./target/uberjar/br.bsb.liberdade.baas.api.jar \
+		-H:Name=./target/baas
+

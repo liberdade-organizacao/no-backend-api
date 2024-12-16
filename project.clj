@@ -17,7 +17,7 @@
                  [middlesphere/clj-compress "0.1.0"]
                  [clj-http "3.13.0"]]
   :min-lein-version "2.9.8"
-  :main ^:skip-aot br.bsb.liberdade.baas.api
+  :main br.bsb.liberdade.baas.api
   :target-path "target/%s"
   :profiles {:uberjar {:aot :all
                        :uberjar-name "br.bsb.liberdade.baas.api.jar"
