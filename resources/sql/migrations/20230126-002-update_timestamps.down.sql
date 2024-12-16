@@ -1,1 +1,1 @@
-DROP TRIGGER IF EXISTS update_actions_timestamp;
+DROP TRIGGER IF EXISTS update_users_timestamp;
