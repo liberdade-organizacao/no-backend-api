@@ -1,7 +1,7 @@
 (ns br.bsb.liberdade.baas.fs
   (:require [clojure.java.io :as io]))
 
-(def fs-folder "./db/fs")
+(def fs-folder (or (System/getenv "DATABASE_FOLDER") "./db/fs"))
 
 (defn- filepath [filename]
   (str fs-folder "/" filename))

@@ -10,7 +10,7 @@
 (def sql-operations-folder (str sql-resources-folder "/operations"))
 (def sql-migrations (utils/read-sql-dir sql-migrations-folder))
 (def sql-operations (utils/read-sql-dir sql-operations-folder))
-(def dbname "./db/database.sqlite")
+(def dbname (or (System/getenv "DATABASE_FILE") "./db/database.sqlite"))
 (def ds (jdbc/get-datasource {:dbtype "sqlite"
                               :dbname dbname}))
 
