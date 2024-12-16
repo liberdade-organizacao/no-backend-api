@@ -1,1 +1,1 @@
-DROP TRIGGER IF EXISTS update_clients_timestamp;
+DROP TRIGGER IF EXISTS update_app_memberships_timestamp; 

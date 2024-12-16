@@ -3,15 +3,14 @@
             [br.bsb.liberdade.baas.db :as db]))
 
 (defn- database-fixture [f]
-  (do
-    (db/setup-database)
-    (db/run-migrations)
-    (try
-      (f)
-      (catch Exception e
-        (println e))
-      (finally
-        (db/drop-database)))))
+  (db/setup-database)
+  (db/run-migrations)
+  (try
+    (f)
+    (catch Exception e
+      (println e))
+    (finally
+      (db/drop-database))))
 
 (deftest all-migrations-are-executed-correctly
   (testing "all migrations are included"

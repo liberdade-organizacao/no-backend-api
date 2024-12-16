@@ -1,1 +1,1 @@
-DROP TRIGGER IF EXISTS update_files_timestamp;
+DROP TRIGGER IF EXISTS update_apps_timestamp;
