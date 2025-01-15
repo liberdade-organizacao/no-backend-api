@@ -6,7 +6,6 @@ Run your own no-backend service!
 
 Requirements:
 - Leiningen
-- PostgreSQL
 - Docker (optional for development)
 - [cljfmt](https://github.com/weavejester/cljfmt) (optional for development)
 
@@ -26,7 +25,6 @@ Check [the example ENV file](./.env.example) for the required parameters.
 Setup the database:
 
 ```
-docker-compose up -d db
 lein run migrate-up
 ```
 
