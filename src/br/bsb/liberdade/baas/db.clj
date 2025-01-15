@@ -116,14 +116,14 @@
 (defn drop-database []
   (undo-migrations))
 
-(defn setup-database []
-  (jdbc/execute! ds [(get sql-operations "setup-database.sql")]))
-
 (defn run-operation [operation params]
   (let [raw-sql (get sql-operations operation)
         query (strint/strint raw-sql params)
         result (execute-query query)]
     result))
+
+(defn setup-database []
+  (run-operation "setup-database.sql" {}))
 
 (defn run-operation-first [operation params]
   (first (run-operation operation params)))
