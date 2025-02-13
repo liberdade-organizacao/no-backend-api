@@ -67,7 +67,43 @@ func (context *Context) NewClient(email, password string, isAdmin bool) (map[str
 
 // Returns `auth_key`
 func (context *Context) AuthClient(email, password string) (map[string]any, error) {
-	// TODO complete me!
-	return nil, errors.New("not implemented yet")
+	if email == "" || password == "" {
+		return nil, errors.New("invalid email/password combination")
+	}
+
+	rawSql := context.Database.Operations["auth-client.sql"]
+	params := map[string]any {
+		"email": email,
+		"password": password,
+	}
+	query, err := utils.Format(rawSql, params)
+	if err != nil {
+		return nil, err
+	}
+
+	rows, err := context.Database.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var resultId int = -1
+	var resultIsAdmin bool = false
+	for rows.Next () {
+		err = rows.Scan(&resultId, &resultIsAdmin)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	authKey, err := newClientAuthKey(resultId, resultIsAdmin)
+	if err != nil {
+		return nil, err
+	}
+
+	outlet := map[string]any {
+		"auth_key": authKey,
+	}
+
+	return outlet, nil
 }
 

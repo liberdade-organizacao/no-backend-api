@@ -59,8 +59,8 @@ func TestHandleClientsAccounts(t *testing.T) {
 		t.Fatal("Failed to generate auth key after auth")
 		return
 	}
-	if firstAuthKey != secondAuthKey {
-		t.Fatal("different auth keys were generated")
+	if firstAuthKey == secondAuthKey {
+		t.Fatal("unsafe auth keys were generated")
 		return
 	}
 
