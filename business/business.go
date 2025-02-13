@@ -26,8 +26,13 @@ func newClientAuthKey(clientId int, isAdmin bool) (string, error) {
 	return authKey, nil
 }
 
-// Returns `auth_key`
+// Returns `auth_key` of new client, or nil if client already exists
 func (context *Context) NewClient(email, password string, isAdmin bool) (map[string]any, error) {
+	if email == "" || password == "" {
+		return nil, errors.New("invalid email/password combination")
+	}
+
+
 	rawSql := context.Database.Operations["create-client-account.sql"]
 	params := map[string]any {
 		"email": email,
@@ -53,6 +58,10 @@ func (context *Context) NewClient(email, password string, isAdmin bool) (map[str
 		}
 	}
 
+	if resultId < 0 {
+		return nil, errors.New("client already exists")
+	}
+
 	authKey, err := newClientAuthKey(resultId, resultIsAdmin)
 	if err != nil {
 		return nil, err
@@ -65,7 +74,7 @@ func (context *Context) NewClient(email, password string, isAdmin bool) (map[str
 	return outlet, nil
 }
 
-// Returns `auth_key`
+// Returns `auth_key` if email and password match a valid user; nil otherwise
 func (context *Context) AuthClient(email, password string) (map[string]any, error) {
 	if email == "" || password == "" {
 		return nil, errors.New("invalid email/password combination")
@@ -88,11 +97,15 @@ func (context *Context) AuthClient(email, password string) (map[string]any, erro
 	defer rows.Close()
 	var resultId int = -1
 	var resultIsAdmin bool = false
-	for rows.Next () {
+	for rows.Next() {
 		err = rows.Scan(&resultId, &resultIsAdmin)
 		if err != nil {
 			return nil, err
 		}
+	}
+
+	if resultId < 0 {
+		return nil, errors.New("email and password didn't match any existing users")
 	}
 
 	authKey, err := newClientAuthKey(resultId, resultIsAdmin)

@@ -64,7 +64,25 @@ func TestHandleClientsAccounts(t *testing.T) {
 		return
 	}
 
-	// TODO gracefully fail repeated signup
-	// TODO gracefully fail login
+	// gracefully fail repeated signup
+	result, err = context.NewClient(email, password, !isAdmin)
+	if err == nil || result != nil {
+		t.Fatalf("created repeated client")
+		return
+	}
+
+	// gracefully fail login
+	result, err = context.AuthClient("bogus@email.com", "random")
+	if result != nil || err == nil {
+		t.Fatalf("authenticated invalid user")
+		return
+	}
+
+	result, err = context.AuthClient("", "")
+	if result != nil || err == nil {
+		t.Fatalf("authenticated empty user")
+		return
+	}
+
 }
 
