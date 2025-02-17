@@ -1,6 +1,8 @@
 package utils
 
 import (
+	"crypto/md5"
+	"encoding/hex"
 	"encoding/json"
 	"github.com/hako/branca"
 )
@@ -36,5 +38,11 @@ func DecodeSecret(secret string) (map[string]any, error) {
 	}
 
 	return outlet, nil
+}
+
+func HideSecret(secret string) string {
+	hasher := md5.New()
+	hasher.Write([]byte(secret + SECRET_KEY))
+	return hex.EncodeToString(hasher.Sum(nil))
 }
 
