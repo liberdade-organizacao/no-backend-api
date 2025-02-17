@@ -137,12 +137,52 @@ func (router *Router) HandleLogin(
 ) {
 	// performing initial validations
 	if request.Method != "POST" {
-		io.WriteString(responseWriter, `{"error": "invalid method"}`)
+		SendResponse(
+			request,
+			responseWriter,
+			map[string]any {
+				"error": "invalid method", 
+			},
+			405,
+		)
 		return
 	}
 
-	// TODO complete me!
-	io.WriteString(responseWriter, `{"error": "not implemented yet"}`)
+	// read
+	defer request.Body.Close()
+	bodyBytes, err := io.ReadAll(request.Body)
+	if err != nil {
+		SendResponse(
+			request,
+			responseWriter,
+			map[string]any {
+				"error": "bad request",
+			},
+			400,
+		)
+		return
+	}
+	body, err := ParseJson(bodyBytes)
+	email := body["email"].(string)
+	password := body["password"].(string)
+
+	// evaluate
+	result, err := router.Context.AuthClient(email, password)
+	if err != nil {
+		SendResponse(
+			request,
+			responseWriter,
+			map[string]any {
+				"error": err.Error(), 
+			},
+			403,
+		)
+		return
+	}
+
+	// print
+	SendResponse(request, responseWriter, result, 200)
 	return
+
 }
 
