@@ -36,7 +36,7 @@ func (context *Context) NewClient(email, password string, isAdmin bool) (map[str
 	rawSql := context.Database.Operations["create-client-account.sql"]
 	params := map[string]any {
 		"email": email,
-		"password": password,
+		"password": utils.HideSecret(password),
 		"is_admin": isAdmin,
 	}
 	query, err := utils.Format(rawSql, params) 
@@ -83,7 +83,7 @@ func (context *Context) AuthClient(email, password string) (map[string]any, erro
 	rawSql := context.Database.Operations["auth-client.sql"]
 	params := map[string]any {
 		"email": email,
-		"password": password,
+		"password": utils.HideSecret(password),
 	}
 	query, err := utils.Format(rawSql, params)
 	if err != nil {

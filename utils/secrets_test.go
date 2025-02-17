@@ -11,7 +11,7 @@ func compareMaps(a, b map[string]any) bool {
 	return x == y
 }
 
-func TestSecretsWork(t *testing.T) {
+func TestEncodingAndDecodingSecrets(t *testing.T) {
 	original := map[string]any {
 		"name": "Marceline",
 		"age": 1000,
@@ -33,6 +33,15 @@ func TestSecretsWork(t *testing.T) {
 
 	if !compareMaps(original, decoded) {
 		t.Fatalf("Secrets were not properly encoded\nexpected: %#v\nobtained: %#v\n", original, decoded)
+		return
+	}
+}
+
+func TestHidingSecrets(t *testing.T) {
+	secret := "random string"
+	hiddenSecret := HideSecret(secret)
+	if secret == hiddenSecret {
+		t.Fatalf("Failed to hide secret")
 		return
 	}
 }
