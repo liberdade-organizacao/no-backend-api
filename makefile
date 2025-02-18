@@ -23,21 +23,21 @@ integration-test:
 build: test
 	go build -tags "sqlite_foreign_keys" -o main.exe main/main.go
 
+.PHONY: docker-save
+docker-save: docker-build
+	docker save -o baas-api.tar baas-api
+
+.PHONY: docker-load
+docker-load:
+	docker load -i baas-api.tar
+
 .PHONY: install
 install: build
 	echo "Complete me! Run the jarfile"
 
 .PHONY: run
 run:
-	lein run up
-
-.PHONY: migrate_up
-migrate_up:
-	lein run migrate-up
-
-.PHONY: migrate_down
-migrate_down:
-	lein run migrate-down
+	./main.exe
 
 .PHONY: export_database
 export_database:
@@ -54,4 +54,12 @@ file_size_job:
 .PHONY: lint
 lint:
 	cljfmt fix
+
+.PHONY: repl
+repl:
+	lein repl
+
+.PHONY: outdated
+outdated:
+	lein ancient check
 
