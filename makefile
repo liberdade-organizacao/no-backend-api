@@ -3,10 +3,6 @@ API_PORT=7780
 .PHONY: default
 default: build
 
-.PHONY: psql
-psql:
-	psql -h localhost -p 5434 -d baas -U liberdade -W
-
 .PHONY: test
 test:
 	lein test
@@ -24,6 +20,10 @@ integration-test:
 .PHONY: build
 build: test
 	lein uberjar
+
+.PHONY: pack
+pack:
+	sh scripts/package_release.sh
 
 .PHONY: docker-build
 docker-build:  build
@@ -44,10 +44,6 @@ docker-save: docker-build
 docker-load:
 	docker load -i baas-api.tar
 
-.PHONY: install
-install: build
-	echo "Complete me! Run the jarfile"
-
 .PHONY: run
 run:
 	lein run up
@@ -62,11 +58,11 @@ migrate_down:
 
 .PHONY: export_database
 export_database:
-	pg_dump -h localhost -p 5434 -d baas -U liberdade -W >> backup.sql
+	echo "FIXME"
 
 .PHONY: import_database
 import_database:
-	psql -h localhost -p 5434 -d baas -U liberdade -W < backup.sql
+	echo "FIXME"
 
 .PHONY: file_size_job
 file_size_job:
