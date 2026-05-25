@@ -6,6 +6,7 @@ db/
 .DS_Store
 *.log
 *.sqlite
+*.tar.gz
 
 ###########
 # CLOJURE #

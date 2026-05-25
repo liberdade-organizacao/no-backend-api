@@ -24,12 +24,26 @@ TMP_DIR=$(mktemp -d)
 trap 'rm -rf "$TMP_DIR"' EXIT
 
 # Copy the jar file and rename it for simplicity in the tarball
-cp "$JAR_PATH" "$TMP_DIR/app.jar"
+cp "$JAR_PATH" "$TMP_DIR/baas.jar"
 
 # Copy other requested files/directories
 cp -r resources "$TMP_DIR/"
 cp -r db "$TMP_DIR/"
 cp .env.example "$TMP_DIR/"
+
+# Create a placeholder Makefile for the release
+cat <<EOF > "$TMP_DIR/makefile"
+.PHONY: default
+default: build run
+
+.PHONY: build
+build:
+        java -jar baas.jar migrate-up
+
+.PHONY: run
+run:
+        java -jar baas.jar up
+EOF
 
 # Create the tarball
 tar -czf "$RELEASE_NAME" -C "$TMP_DIR" .
