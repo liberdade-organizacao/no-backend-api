@@ -17,8 +17,8 @@ To maintain a clear separation of concerns and make the implementation manageabl
 - [x] Define helper functions to validate specific types (e.g., `validate-string`, `validate-email`, `validate-presence`).
 
 ### Step 2: Identify Endpoints and Requirements
-- [ ] Create a mapping of all routes in `src/br/bsb/liberdade/baas/api.clj` to their expected payload/header requirements based on `docs/api.md`.
-- [ ] Document these requirements clearly to serve as the "source of truth" for the validation implementation.
+- [x] Create a mapping of all routes in `src/br/bsb/liberdade/baas/api.clj` to their expected payload/header requirements based on `docs/api.md`.
+- [x] Document these requirements clearly to serve as the "source of truth" for the validation implementation.
 
 ### Step 3: Implement Validation for Individual Handlers
 - [ ] For each handler in `src/br/bsb/liberdade/baas/api.clj`:
