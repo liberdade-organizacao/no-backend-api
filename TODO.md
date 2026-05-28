@@ -12,9 +12,9 @@ The implementation will focus on validating:
 To maintain a clear separation of concerns and make the implementation manageable for less capable models, we will use a middleware-like approach or a dedicated validation utility.
 
 ### Step 1: Define Validation Schema and Utilities
-- [ ] Create a new namespace `br.bsb.liberdade.baas.validation` to house validation logic.
-- [ ] Implement a generic validation function that takes a schema (as a map) and the input data (params) and returns either the valid data or a collection of error messages.
-- [ ] Define helper functions to validate specific types (e.g., `validate-string`, `validate-email`, `validate-presence`).
+- [x] Create a new namespace `br.bsb.liberdade.baas.validation` to house validation logic.
+- [x] Implement a generic validation function that takes a schema (as a map) and the input data (params) and returns either the valid data or a collection of error messages.
+- [x] Define helper functions to validate specific types (e.g., `validate-string`, `validate-email`, `validate-presence`).
 
 ### Step 2: Identify Endpoints and Requirements
 - [ ] Create a mapping of all routes in `src/br/bsb/liberdade/baas/api.clj` to their expected payload/header requirements based on `docs/api.md`.
