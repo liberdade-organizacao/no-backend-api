@@ -11,7 +11,8 @@
             [br.bsb.liberdade.baas.business :as biz]
             [br.bsb.liberdade.baas.proxies :as proxies]
             [br.bsb.liberdade.baas.tar.decompress :as untar]
-            [br.bsb.liberdade.baas.jobs :as jobs]))
+             [br.bsb.liberdade.baas.jobs :as jobs]
+             [br.bsb.liberdade.baas.validation :as v]])
 
 ; #############
 ; # UTILITIES #
@@ -51,21 +52,36 @@
 
 (defn clients-signup [req]
   (let [params (boilerplate-in req (slurp (:body req)))
-        email (get params "email")
-        password (get params "password")]
-    (boilerplate-out req (biz/new-client email password false))))
+        validated (v/validate {"email" (fn [v] (or (v/validate-presence v) (v/validate-email v)))
+                               "password" (fn [v] (or (v/validate-presence v) (v/validate-string v)))}
+                               params)]
+    (if (contains? validated :error)
+      (boilerplate-out req validated)
+      (let [email (get validated "email")
+            password (get validated "password")]
+        (boilerplate-out req (biz/new-client email password false))))))
 
 (defn clients-login [req]
   (let [params (boilerplate-in req (slurp (:body req)))
-        email (get params "email")
-        password (get params "password")]
-    (boilerplate-out req (biz/auth-client email password))))
+        validated (v/validate {"email" (fn [v] (or (v/validate-presence v) (v/validate-email v)))
+                               "password" (fn [v] (or (v/validate-presence v) (v/validate-string v)))}
+                               params)]
+    (if (contains? validated :error)
+      (boilerplate-out req validated)
+      (let [email (get validated "email")
+            password (get validated "password")]
+        (boilerplate-out req (biz/auth-client email password))))))
 
 (defn create-app [req]
   (let [params (boilerplate-in req (slurp (:body req)))
-        auth-key (get params "auth_key")
-        app-name (get params "app_name")]
-    (boilerplate-out req (biz/new-app auth-key app-name))))
+        validated (v/validate {"auth_key" (fn [v] (or (v/validate-presence v) (v/validate-string v)))
+                               "app_name" (fn [v] (or (v/validate-presence v) (v/validate-string v)))}
+                               params)]
+    (if (contains? validated :error)
+      (boilerplate-out req validated)
+      (let [auth-key (get validated "auth_key")
+            app-name (get validated "app_name")]
+        (boilerplate-out req (biz/new-app auth-key app-name))))))
 
 (defn list-apps [req]
   (let [query-string (:query-string req)
@@ -75,76 +91,127 @@
 
 (defn delete-app [req]
   (let [params (boilerplate-in req (slurp (:body req)))
-        client-auth-key (get params "client_auth_key")
-        app-auth-key (get params "app_auth_key")]
-    (boilerplate-out req (biz/delete-app client-auth-key app-auth-key))))
+        validated (v/validate {"client_auth_key" (fn [v] (or (v/validate-presence v) (v/validate-string v)))
+                               "app_auth_key" (fn [v] (or (v/validate-presence v) (v/validate-string v)))}
+                               params)]
+    (if (contains? validated :error)
+      (boilerplate-out req validated)
+      (let [client-auth-key (get validated "client_auth_key")
+            app-auth-key (get validated "app_auth_key")]
+        (boilerplate-out req (biz/delete-app client-auth-key app-auth-key))))))
 
 (defn invite-to-app [req]
   (let [params (->> req :body slurp (boilerplate-in req))
-        inviter-auth-key (get params "inviter_auth_key" nil)
-        app-auth-key (get params "app_auth_key" nil)
-        invitee-email (get params  "invitee_email" nil)
-        invitee-role (get params "invitee_role" "contributor")]
-    (boilerplate-out req
-                 (biz/invite-to-app-by-email inviter-auth-key
-                                             app-auth-key
-                                             invitee-email
-                                             invitee-role))))
+        validated (v/validate {"inviter_auth_key" (fn [v] (or (v/validate-presence v) (v/validate-string v)))
+                               "app_auth_key" (fn [v] (or (v/validate-presence v) (v/validate-string v)))
+                               "invitee_email" (fn [v] (or (v/validate-presence v) (v/validate-email v)))}
+                               params)]
+    (if (contains? validated :error)
+      (boilerplate-out req validated)
+      (let [inviter-auth-key (get validated "inviter_auth_key")
+            app-auth-key (get validated "app_auth_key")
+            invitee-email (get validated "invitee_email")
+            invitee-role (get params "invitee_role" "contributor")]
+        (boilerplate-out req
+                         (biz/invite-to-app-by-email inviter-auth-key
+                                                     app-auth-key
+                                                     invitee-email
+                                                     invitee-role))))))
 
 (defn revoke-from-app [req]
   (let [params (->> req :body slurp (boilerplate-in req))
-        revoker-auth-key (get params "revoker_auth_key" nil)
-        app-auth-key (get params "app_auth_key" nil)
-        revokee-email (get params  "revokee_email" nil)]
-    (boilerplate-out req
-                 (biz/revoke-from-app-by-email revoker-auth-key
-                                               app-auth-key
-                                               revokee-email))))
+        validated (v/validate {"revoker_auth_key" (fn [v] (or (v/validate-presence v) (v/validate-string v)))
+                               "app_auth_key" (fn [v] (or (v/validate-presence v) (v/validate-string v)))
+                               "revokee_email" (fn [v] (or (v/validate-presence v) (v/validate-email v)))}
+                               params)]
+    (if (contains? validated :error)
+      (boilerplate-out req validated)
+      (let [revoker-auth-key (get validated "revoker_auth_key")
+            app-auth-key (get validated "app_auth_key")
+            revokee-email (get validated "revokee_email")]
+        (boilerplate-out req
+                         (biz/revoke-from-app-by-email revoker-auth-key
+                                                       app-auth-key
+                                                       revokee-email))))))
 
 (defn update-client-password [req]
   (let [params (->> req :body slurp (boilerplate-in req))
-        client-auth-key (get params "auth_key" nil)
-        old-password (get params "old_password" nil)
-        new-password (get params "new_password" nil)]
-    (boilerplate-out req
-                 (biz/change-client-password client-auth-key
-                                             old-password
-                                             new-password))))
+        validated (v/validate {"auth_key" (fn [v] (or (v/validate-presence v) (v/validate-string v)))
+                               "old_password" (fn [v] (or (v/validate-presence v) (v/validate-string v)))
+                               "new_password" (fn [v] (or (v/validate-presence v) (v/validate-string v)))}
+                               params)]
+    (if (contains? validated :error)
+      (boilerplate-out req validated)
+      (let [client-auth-key (get validated "auth_key")
+            old-password (get validated "old_password")
+            new-password (get validated "new_password")]
+        (boilerplate-out req
+                         (biz/change-client-password client-auth-key
+                                                     old-password
+                                                     new-password))))))
 (defn delete-client [req]
   (let [params (->> req :body slurp (boilerplate-in req))
-        auth-key (get params "auth_key" nil)
-        password (get params "password" nil)]
-    (boilerplate-out req (biz/delete-client auth-key password))))
+        validated (v/validate {"auth_key" (fn [v] (or (v/validate-presence v) (v/validate-string v)))
+                               "password" (fn [v] (or (v/validate-presence v) (v/validate-string v)))}
+                               params)]
+    (if (contains? validated :error)
+      (boilerplate-out req validated)
+      (let [auth-key (get validated "auth_key")
+            password (get validated "password")]
+        (boilerplate-out req (biz/delete-client auth-key password))))))
 
 (defn users-signup [req]
   (let [params (->> req :body slurp (boilerplate-in req))
-        app-auth-key (get params "app_auth_key" nil)
-        email (get params "email" nil)
-        password (get params "password" nil)]
-    (boilerplate-out req (biz/new-user app-auth-key email password))))
+        validated (v/validate {"app_auth_key" (fn [v] (or (v/validate-presence v) (v/validate-string v)))
+                               "email" (fn [v] (or (v/validate-presence v) (int? v) (v/validate-email v)))
+                               "password" (fn [v] (or (v/validate-presence v) (v/validate-string v)))}
+                               params)]
+    (if (contains? validated :error)
+      (boilerplate-out req validated)
+      (let [app-auth-key (get validated "app_auth_key")
+            email (get validated "email")
+            password (get validated "password")]
+        (boilerplate-out req (biz/new-user app-auth-key email password))))))
 
 (defn users-login [req]
   (let [params (->> req :body slurp (boilerplate-in req))
-        app-auth-key (get params "app_auth_key" nil)
-        email (get params "email" nil)
-        password (get params "password" nil)]
-    (boilerplate-out req (biz/auth-user app-auth-key email password))))
+        validated (v/validate {"app_auth_key" (fn [v] (or (v/validate-presence v) (v/validate-string v)))
+                               "email" (fn [v] (or (v/validate-presence v) (int? v) (v/validate-email v)))
+                               "password" (fn [v] (or (v/validate-presence v) (v/validate-string v)))}
+                               params)]
+    (if (contains? validated :error)
+      (boilerplate-out req validated)
+      (let [app-auth-key (get validated "app_auth_key")
+            email (get validated "email")
+            password (get validated "password")]
+        (boilerplate-out req (biz/auth-user app-auth-key email password))))))
 
 (defn delete-user [req]
   (let [params (->> req :body slurp (boilerplate-in req))
-        user-auth-key (get params "user_auth_key" nil)
-        password (get params "password" nil)]
-    (boilerplate-out req (biz/delete-user user-auth-key password))))
+        validated (v/validate {"user_auth_key" (fn [v] (or (v/validate-presence v) (v/validate-string v)))
+                               "password" (fn [v] (or (v/validate-presence v) (v/validate-string v)))}
+                               params)]
+    (if (contains? validated :error)
+      (boilerplate-out req validated)
+      (let [user-auth-key (get validated "user_auth_key")
+            password (get validated "password")]
+        (boilerplate-out req (biz/delete-user user-auth-key password))))))
 
 (defn update-user-password [req]
   (let [params (->> req :body slurp (boilerplate-in req))
-        user-auth-key (get params "user_auth_key" nil)
-        old-password (get params "old_password" nil)
-        new-password (get params "new_password" nil)]
-    (boilerplate-out req
-                 (biz/update-user-password user-auth-key
-                                           old-password
-                                           new-password))))
+        validated (v/validate {"user_auth_key" (fn [v] (or (v/validate-presence v) (v/validate-string v)))
+                               "old_password" (fn [v] (or (v/validate-presence v) (v/validate-string v)))
+                               "new_password" (fn [v] (or (v/validate-presence v) (v/validate-string v)))}
+                               params)]
+    (if (contains? validated :error)
+      (boilerplate-out req validated)
+      (let [user-auth-key (get validated "user_auth_key")
+            old-password (get validated "old_password")
+            new-password (get validated "new_password")]
+        (boilerplate-out req
+                         (biz/update-user-password user-auth-key
+                                                   old-password
+                                                   new-password))))))
 
 (defn list-app-users [req]
   (let [params (-> req :query-string url-search-params)
@@ -210,24 +277,37 @@
 
 (defn revoke-app-manager [req]
   (let [params (->> req :body slurp (boilerplate-in req))
-        client-auth-key (get params "client_auth_key" nil)
-        app-auth-key (get params "app_auth_key" nil)
-        email-to-revoke (get params "email_to_revoke" nil)]
-    (boilerplate-out req
-                 (biz/revoke-admin-access client-auth-key
-                                          app-auth-key
-                                          email-to-revoke))))
+        validated (v/validate {"client_auth_key" (fn [v] (or (v/validate-presence v) (v/validate-string v)))
+                               "app_auth_key" (fn [v] (or (v/validate-presence v) (v/validate-string v)))
+                               "email_to_revoke" (fn [v] (or (v/validate-presence v) (v/validate-email v)))}
+                               params)]
+    (if (contains? validated :error)
+      (boilerplate-out req validated)
+      (let [client-auth-key (get validated "client_auth_key")
+            app-auth-key (get validated "app_auth_key")
+            email-to-revoke (get validated "email_to_revoke")]
+        (boilerplate-out req
+                         (biz/revoke-admin-access client-auth-key
+                                                  app-auth-key
+                                                  email-to-revoke))))))
 
 (defn upload-action [req]
   (let [params (->> req :body slurp (boilerplate-in req))
-        client-auth-key (get params "client_auth_key" nil)
-        app-auth-key (get params "app_auth_key" nil)
-        action-name (get params "action_name" nil)
-        action-script (get params "action_script" nil)]
-    (boilerplate-out req (biz/upsert-action client-auth-key
-                                    app-auth-key
-                                    action-name
-                                    action-script))))
+        validated (v/validate {"client_auth_key" (fn [v] (or (v/validate-presence v) (v/validate-string v)))
+                               "app_auth_key" (fn [v] (or (v/validate-presence v) (v/validate-string v)))
+                               "action_name" (fn [v] (or (v/validate-presence v) (v/validate-string v)))
+                               "action_script" (fn [v] (or (v/validate-presence v) (v/validate-string v)))}
+                               params)]
+    (if (contains? validated :error)
+      (boilerplate-out req validated)
+      (let [client-auth-key (get validated "client_auth_key")
+            app-auth-key (get validated "app_auth_key")
+            action-name (get validated "action_name")
+            action-script (get validated "action_script")]
+        (boilerplate-out req (biz/upsert-action client-auth-key
+                                                 app-auth-key
+                                                 action-name
+                                                 action-script))))))
 
 (defn update-action [req]
   (let [params (->> req :body slurp (boilerplate-in req))
