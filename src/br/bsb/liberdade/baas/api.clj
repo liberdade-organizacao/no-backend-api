@@ -86,8 +86,12 @@
 (defn list-apps [req]
   (let [query-string (:query-string req)
         search-params (url-search-params query-string)
-        auth-key (get search-params "auth_key")]
-    (boilerplate-out req (biz/get-clients-apps auth-key))))
+        validated (v/validate {"auth_key" (fn [v] (or (v/validate-presence v) (v/validate-string v)))}
+                               search-params)]
+    (if (contains? validated :error)
+      (boilerplate-out req validated)
+      (let [auth-key (get validated "auth_key")]
+        (boilerplate-out req (biz/get-clients-apps auth-key))))))
 
 (defn delete-app [req]
   (let [params (boilerplate-in req (slurp (:body req)))
@@ -347,25 +351,38 @@
 
 (defn delete-action [req]
   (let [params (->> req :body slurp (boilerplate-in req))
-        client-auth-key (get params "client_auth_key" nil)
-        app-auth-key (get params "app_auth_key" nil)
-        action-name (get params "action_name" nil)]
-    (boilerplate-out req
-                 (biz/delete-action client-auth-key
-                                    app-auth-key
-                                    action-name))))
+        validated (v/validate {"client_auth_key" (fn [v] (or (v/validate-presence v) (v/validate-string v)))
+                               "app_auth_key" (fn [v] (or (v/validate-presence v) (v/validate-string v)))
+                               "action_name" (fn [v] (or (v/validate-presence v) (v/validate-string v)))}
+                               params)]
+    (if (contains? validated :error)
+      (boilerplate-out req validated)
+      (let [client-auth-key (get validated "client_auth_key")
+            app-auth-key (get validated "app_auth_key")
+            action-name (get validated "action_name")]
+        (boilerplate-out req
+                         (biz/delete-action client-auth_auth_key
+                                             app-auth-key
+                                             action-name))))))
 
 (defn run-action [req]
   (let [params (->> req :body slurp (boilerplate-in req))
-        user-auth-key (get params "user_auth_key" nil)
-        app-auth-key (get params "app_auth_key" nil)
-        action-name (get params "action_name" nil)
-        action-param (get params "action_param" nil)]
-    (boilerplate-out req
-                 (proxies/run-action user-auth-key
-                                     app-auth-key
-                                     action-name
-                                     action-param))))
+        validated (v/validate {"user_auth_key" (fn [v] (or (v/validate-presence v) (v/validate-string v)))
+                               "app_auth_key" (fn [v] (or (v/validate-presence v) (v/validate-string v)))
+                               "action_name" (fn [v] (or (v/validate-presence v) (v/validate-string v)))
+                               "action_param" (fn [v] (or (v/validate-presence v) (v/validate-string v)))}
+                               params)]
+    (if (contains? validated :error)
+      (boilerplate-out req validated)
+      (let [user-auth-key (get validated "user_auth_key")
+            app-auth-key (get validated "app_auth_key")
+            action-name (get validated "action_name")
+            action-param (get validated "action_param")]
+        (boilerplate-out req
+                         (proxies/run-action user-auth-key
+                                              app-auth-key
+                                              action-name
+                                              action-param))))))
 
 (defn- list-all-things [req f]
   (-> req
@@ -388,15 +405,25 @@
 
 (defn promote-to-admin [req]
   (let [params (->> req :body slurp (boilerplate-in req))
-        auth-key (get params "auth_key" nil)
-        email (get params "email" nil)]
-    (boilerplate-out req (biz/promote-to-admin auth-key email))))
+        validated (v/validate {"auth_key" (fn [v] (or (v/validate-presence v) (v/validate-string v)))
+                               "email" (fn [v] (or (v/validate-presence v) (v/validate-email v)))}
+                               params)]
+    (if (contains? validated :error)
+      (boilerplate-out req validated)
+      (let [auth-key (get validated "auth_key")
+            email (get validated "email")]
+        (boilerplate-out req (biz/promote-to-admin auth-key email))))))
 
 (defn demote-admin [req]
   (let [params (->> req :body slurp (boilerplate-in req))
-        auth-key (get params "auth_key" nil)
-        email (get params "email" nil)]
-    (boilerplate-out req (biz/demote-admin auth-key email))))
+        validated (v/validate {"auth_key" (fn [v] (or (v/validate-presence v) (v/validate-string v)))
+                               "email" (fn [v] (or (v/validate-presence v) (v/validate-string v)))}
+                               params)]
+    (if (contains? validated :error)
+      (boilerplate-out req validated)
+      (let [auth-key (get validated "auth_key")
+            email (get validated "email")]
+        (boilerplate-out req (biz/demote-admin auth-key email))))))
 
 (defn check-admin [req]
   (list-all-things req biz/check-admin))
