@@ -12,7 +12,7 @@
             [br.bsb.liberdade.baas.proxies :as proxies]
             [br.bsb.liberdade.baas.tar.decompress :as untar]
              [br.bsb.liberdade.baas.jobs :as jobs]
-             [br.bsb.liberdade.baas.validation :as v]])
+              [br.bsb.liberdade.baas.validation :as v]))
 
 ; #############
 ; # UTILITIES #
@@ -229,250 +229,290 @@
         (boilerplate-out req (biz/list-app-users client-auth-key app-auth-key))))))
 
 (defn upload-user-file [req]
-  (let [user-auth-key (-> req :headers (get "x-user-auth-key"))
-        filename (-> req :headers (get "x-filename"))
-        contents (-> req :body slurp)
-        validated (v/validate {"user_auth_key" (fn [v] (or (v/validate-presence v) (v/validate-string v)))
-                               "filename" (fn [v] (or (v/validate-presence v) (v/validate-string v)))}
-                               {:user_auth_key user-auth-key :filename filename})]
-        ]
-    (if (contains? validated :error)
-      (boilerplate-out req validated)
-      (let [user-auth-key (get validated "user_auth_key")
-            filename (get validated "filename")]
-        (boilerplate-out req (biz/upload-user-file user-auth-key filename contents))))))
+   (let [user-auth-key (-> req :headers (get "x-user-auth-key"))
+         filename (-> req :headers (get "x-filename"))
+         contents (-> req :body slurp)
+         validated (v/validate {"user_auth_key" (fn [v] (or (v/validate-presence v) (v/validate-string v)))
+                                 "filename" (fn [v] (or (v/validate-presence v) (v/validate-string v)))}
+                               {"user_auth_key" user-auth-key "filename" filename})]
+     (if (contains? validated :error)
+        (boilerplate-out req validated)
+        (let [user-auth-key (get validated "user_auth_key")
+             filename (get validated "filename")]
+          (boilerplate-out req (biz/upload-user-file user-auth-key filename contents))))))
 
 (defn download-user-file [req]
-  (let [user-auth-key (-> req :headers (get "x-user-auth-key"))
-        filename (-> req :headers (get "x-filename"))
-        validated (v/validate {"user_auth-key" (fn [v] (or (v/validate-presence v) (v/validate-string v)))
-                               "filename" (fn [v] (or (v/validate-presence v) (v/validate-string v)))}
-                               {:user-auth-key user-auth-key :filename filename})]
-    (if (contains? validated :error)
-      (boilerplate-out req validated)
-      (biz/download-user-file (get validated "user-auth-key") filename))))﻿
+   (let [user-auth-key (-> req :headers (get "x-user-auth-key"))
+         filename (-> req :headers (get "x-filename"))
+         validated (v/validate {"user_auth_key" (fn [v] (or (v/validate-presence v) (v/validate-string v)))
+                                 "filename" (fn [v] (or (v/validate-presence v) (v/validate-string v)))}
+                               {"user_auth_key" user-auth-key "filename" filename})]
+     (if (contains? validated :error)
+        (boilerplate-out req validated)
+        (let [user-auth-key (get validated "user_auth_key")
+             filename (get validated "filename")]
+          (boilerplate-out req (biz/download-user-file user-auth-key filename))))))
 
 (defn list-user-files [req]
-  (let [auth-key (-> req :headers (get "x-user-auth-key"))]
-    (boilerplate-out req (biz/list-user-files auth-key))))
+   (let [auth-key (-> req :headers (get "x-user-auth-key"))
+         validated (v/validate {"user_auth_key" (fn [v] (or (v/validate-presence v) (v/validate-string v)))}
+                               {"user_auth_key" auth-key})]
+     (if (contains? validated :error)
+        (boilerplate-out req validated)
+        (boilerplate-out req (biz/list-user-files auth-key)))))
 
 (defn delete-user-file [req]
-  (let [user-auth-key (-> req :headers (get "x-user-auth-key"))
-        filename (-> req :headers (get "x-filename"))
-        validated (v/validate {"user_auth-key" (fn [v] (or (v/validate-presence v) (v/validate-string v)))
-                               "filename" (fn [v] (or (v/validate-presence v) (v/validate-string v)))}
-                               {:user-auth-key user-auth-key :filename filename})]
-    (if (contains? validated :error)
-      (boilerplate-out req validated)
-      (biz/delete-user-file (get validated "user-auth-key") filename))))
+   (let [user-auth-key (-> req :headers (get "x-user-auth-key"))
+         filename (-> req :headers (get "x-filename"))
+         validated (v/validate {"user_auth_key" (fn [v] (or (v/validate-presence v) (v/validate-string v)))
+                                 "filename" (fn [v] (or (v/validate-presence v) (v/validate-string v)))}
+                               {"user_auth_key" user-auth-key "filename" filename})]
+     (if (contains? validated :error)
+        (boilerplate-out req validated)
+        (let [user-auth-key (get validated "user_auth_key")
+             filename (get validated "filename")]
+          (boilerplate-out req (biz/delete-user-file user-auth-key filename))))))
 
 (defn upload-app-file [req]
-  (let [client-auth-key (-> req :headers (get "x-client-auth-key"))
-        app-auth-key (-> req :headers (get "x-app-auth-key"))
-        filename (-> req :headers (get "x-filename"))
-        contents (-> req :body slurp)
-        validated (v/validate {"client_auth_key" (fn [v] (or (v/validate-presence v) (v/validate-string v)))
-                               "app_auth_key" (fn [v] (or (v/validate-presence v) (v/validate-string v)))
-                               "filename" (fn [v] (or (v/validate-presence v) (v/validate-string v)))}
-                               {:client_auth_key client-auth-key :app_auth_key app-auth-key :filename filename}]
-        ]
-    (if (contains? validated :error)
-      (boilerplate-out req validated)
-      (->> (biz/upload-app-file client-auth-key app-auth-key filename contents)
-           (boilerplate-out req))))))
+   (let [client-auth-key (-> req :headers (get "x-client-auth-key"))
+         app-auth-key (-> req :headers (get "x-app-auth-key"))
+         filename (-> req :headers (get "x-filename"))
+         contents (-> req :body slurp)
+         validated (v/validate {"client_auth_key" (fn [v] (or (v/validate-presence v) (v/validate-string v)))
+                                 "app_auth_key" (fn [v] (or (v/validate-presence v) (v/validate-string v)))
+                                 "filename" (fn [v] (or (v/validate-presence v) (v/validate-string v)))}
+                               {"client_auth_key" client-auth-key "app_auth_key" app-auth-key "filename" filename})]
+     (if (contains? validated :error)
+        (boilerplate-out req validated)
+        (->> (biz/upload-app-file client-auth-key app-auth-key filename contents)
+             (boilerplate-out req)))))
 
 (defn download-app-file [req]
-  (let [client-auth-key (-> req :headers (get "x-client-auth-key"))
-        app-auth-key (-> req :headers (get "x-app-auth-key"))
-        filename (-> req :headers (get "x-filename"))
-        validated (v/validate {"client_auth-key" (fn [v] (or (v/validate-presence v) (v/validate-string v)))
-                               "app_auth_key" (fn [v] (or (v/validate-presence v) (v/validate-string v)))
-                               "filename" (fn [v] (or (v/validate-presence v) (v/validate-string v)))}
-                               {:client_auth-key client-auth-key :app_auth-key app-auth-key :filename filename}]
-        ]
-    (if (contains? validated :error)
-      (boilerplate-out req validated)
-      (biz/download-app-file client-auth-key app-auth-key filename))))
+   (let [client-auth-key (-> req :headers (get "x-client-auth-key"))
+         app-auth-key (-> req :headers (get "x-app-auth-key"))
+         filename (-> req :headers (get "x-filename"))
+         validated (v/validate {"client_auth_key" (fn [v] (or (v/validate-presence v) (v/validate-string v)))
+                                 "app_auth_key" (fn [v] (or (v/validate-presence v) (v/validate-string v)))
+                                 "filename" (fn [v] (or (v/validate-presence v) (v/validate-string v)))}
+                               {"client_auth_key" client-auth-key "app_auth_key" app-auth-key "filename" filename})]
+     (if (contains? validated :error)
+        (boilerplate-out req validated)
+        (let [client-auth-key (get validated "client_auth_key")
+             app-auth-key (get validated "app_auth_key")
+             filename (get validated "filename")]
+          (boilerplate-out req (biz/download-app-file client-auth-key app-auth-key filename))))))
 
 (defn delete-app-file [req]
-  (let [client-auth-key (-> req :headers (get "x-client-auth-key"))
-        app-auth-key (-> req :headers (get "x-app-auth-key"))
-        filename (-> req :headers (get "x-filename"))
-        validated (v/validate {"client_auth_key" (fn [v] (or (v/validate-presence v) (v/validate-string v)))
-                               "app_auth_key" (fn [v] (or (v/validate-presence v) (v/validate-string v)))
-                               "filename" (fn [v] (or (v/validate-presence v) (v/validate-string v)))}
-                               {:client_auth-key client-auth-key :app_auth-key app-auth-key :filename filename}]
-        ]
-    (if (contains? validated :error)
-      (boilerplate-out req validated)
-      (boilerplate-out req (biz/delete-app-file client-auth-key app-auth-key filename))))))
+   (let [client-auth-key (-> req :headers (get "x-client-auth-key"))
+         app-auth-key (-> req :headers (get "x-app-auth-key"))
+         filename (-> req :headers (get "x-filename"))
+         validated (v/validate {"client_auth_key" (fn [v] (or (v/validate-presence v) (v/validate-string v)))
+                                 "app_auth_key" (fn [v] (or (v/validate-presence v) (v/validate-string v)))
+                                 "filename" (fn [v] (or (v/validate-presence v) (v/validate-string v)))}
+                               {"client_auth_key" client-auth-key "app_auth_key" app-auth-key "filename" filename})]
+     (if (contains? validated :error)
+        (boilerplate-out req validated)
+        (let [client-auth-key (get validated "client_auth_key")
+             app-auth-key (get validated "app_auth_key")
+             filename (get validated "filename")]
+          (boilerplate-out req (biz/delete-app-file client-auth-key app-auth-key filename))))))
 
 (defn list-app-files [req]
-  (let [params (-> req :query-string url-search-params)
-        validated (v/validate {"client_auth_key" (fn [v] (or (v/validate-presence v) (v/validate-string v)))
-                               "app_auth_key" (fn [v] (or (v/validate-presence v) (v/validate-string v)))}
+   (let [params (-> req :query-string url-search-params)
+         validated (v/validate {"client_auth_key" (fn [v] (or (v/validate-presence v) (v/validate-string v)))
+                                 "app_auth_key" (fn [v] (or (v/validate-presence v) (v/validate-string v)))}
                                params)]
-    (if (contains? validated :error)
-      (boilerplate-out req validated)
-      (let [client-auth-key (get validated "client_auth_key")
-            app-auth-key (get validated "app_auth_key")]
-        (boilerplate-out req (biz/list-app-files client-auth-key app-auth-key))))))
+     (if (contains? validated :error)
+        (boilerplate-out req validated)
+        (let [client-auth-key (get validated "client_auth_key")
+             app-auth-key (get validated "app_auth_key")]
+          (boilerplate-out req (biz/list-app-files client-auth-key app-auth-key))))))
 
 (defn list-app-managers [req]
-  (let [params (-> req :query-string url-search-params)
-        client-auth-key (get params "client_auth_key" nil)
-        app-auth-key (get params "app_auth_key" nil)]
-    (boilerplate-out req
-                 (biz/list-app-managers client-auth-key app-auth-key))))
+   (let [params (-> req :query-string url-search-params)
+         validated (v/validate {"client_auth_key" (fn [v] (or (v/validate-presence v) (v/validate-string v)))
+                                 "app_auth_key" (fn [v] (or (v/validate-presence v) (v/validate-string v)))}
+                               params)]
+     (if (contains? validated :error)
+        (boilerplate-out req validated)
+        (let [client-auth-key (get validated "client_auth_key")
+             app-auth-key (get validated "app_auth_key")]
+          (boilerplate-out req
+                           (biz/list-app-managers client-auth-key app-auth-key))))))
 
 (defn revoke-app-manager [req]
-  (let [params (->> req :body slurp (boilerplate-in req))
-        validated (v/validate {"client_auth_key" (fn [v] (or (v/validate-presence v) (v/validate-string v)))
-                               "app_auth_key" (fn [v] (or (v/validate-presence v) (v/validate-string v)))
-                               "email_to_revoke" (fn [v] (or (v/validate-presence v) (v/validate-email v)))}
+   (let [params (->> req :body slurp (boilerplate-in req))
+         validated (v/validate {"client_auth_key" (fn [v] (or (v/validate-presence v) (v/validate-string v)))
+                                 "app_auth_key" (fn [v] (or (v/validate-presence v) (v/validate-string v)))
+                                 "email_to_revoke" (fn [v] (or (v/validate-presence v) (v/validate-email v)))}
                                params)]
-    (if (contains? validated :error)
-      (boilerplate-out req validated)
-      (let [client-auth-key (get validated "client_auth_key")
-            app-auth-key (get validated "app_auth_key")
-            email-to-revoke (get validated "email_to_revoke")]
-        (boilerplate-out req
-                         (biz/revoke-admin-access client-auth-key
-                                                  app-auth-key
-                                                  email-to-revoke))))))
+     (if (contains? validated :error)
+        (boilerplate-out req validated)
+        (let [client-auth-key (get validated "client_auth_key")
+             app-auth-key (get validated "app_auth_key")
+             email-to-revoke (get validated "email_to_revoke")]
+          (boilerplate-out req
+                           (biz/revoke-admin-access client-auth-key
+                                                   app-auth-key
+                                                   email-to-revoke))))))
 
 (defn upload-action [req]
-  (let [params (->> req :body slurp (boilerplate-in req))
-        validated (v/validate {"client_auth_key" (fn [v] (or (v/validate-presence v) (v/validate-string v)))
-                               "app_auth_key" (fn [v] (or (v/validate-presence v) (v/validate-string v)))
-                               "action_name" (fn [v] (or (v/validate-presence v) (v/validate-string v)))
-                               "action_script" (fn [v] (or (v/validate-presence v) (v/validate-string v)))}
+   (let [params (->> req :body slurp (boilerplate-in req))
+         validated (v/validate {"client_auth_key" (fn [v] (or (v/validate-presence v) (v/validate-string v)))
+                                 "app_auth_key" (fn [v] (or (v/validate-presence v) (v/validate-string v)))
+                                 "action_name" (fn [v] (or (v/validate-presence v) (v/validate-string v)))
+                                 "action_script" (fn [v] (or (v/validate-presence v) (v/validate-string v)))}
                                params)]
-    (if (contains? validated :error)
-      (boilerplate-out req validated)
-      (let [client-auth-key (get validated "client_auth_key")
-            app-auth-key (get validated "app_auth_key")
-            action-name (get validated "action_name")
-            action-script (get validated "action_script")]
-        (boilerplate-out req (biz/upsert-action client-auth-key
+     (if (contains? validated :error)
+        (boilerplate-out req validated)
+        (let [client-auth-key (get validated "client_auth_key")
+             app-auth-key (get validated "app_auth_key")
+             action-name (get validated "action_name")
+             action-script (get validated "action_script")]
+          (boilerplate-out req (biz/upsert-action client-auth-key
                                                  app-auth-key
                                                  action-name
                                                  action-script))))))
 
 (defn update-action [req]
-  (let [params (->> req :body slurp (boilerplate-in req))
-        client-auth-key (get params "client_auth_key" nil)
-        app-auth-key (get params "app_auth_key" nil)
-        old-action-name (get params "old_action_name" nil)
-        new-action-name (get params "new_action_name" nil)
-        action-script (get params "action_script" nil)]
-    (boilerplate-out req
-                 (biz/update-action client-auth-key
-                                    app-auth-key
-                                    old-action-name
-                                    new-action-name
-                                    action-script))))
+   (let [params (->> req :body slurp (boilerplate-in req))
+         validated (v/validate {"client_auth_key" (fn [v] (or (v/validate-presence v) (v/validate-string v)))
+                                 "app_auth_key" (fn [v] (or (v/validate-presence v) (v/validate-string v)))
+                                 "old_action_name" (fn [v] (or (v/validate-presence v) (v/validate-string v)))
+                                 "new_action_name" (fn [v] (or (v/validate-presence v) (v/validate-string v)))
+                                 "action_script" (fn [v] (or (v/validate-presence v) (v/validate-string v)))}
+                               params)]
+     (if (contains? validated :error)
+        (boilerplate-out req validated)
+        (let [client-auth-key (get validated "client_auth_key")
+             app-auth-key (get validated "app_auth_key")
+             old-action-name (get validated "old_action_name")
+             new-action-name (get validated "new_action_name")
+             action-script (get validated "action_script")]
+          (boilerplate-out req
+                           (biz/update-action client-auth-key
+                                             app-auth-key
+                                             old-action-name
+                                             new-action-name
+                                             action-script))))))
 
 (defn upload-actions [req]
-  (let [client-auth-key (-> req :headers (get "x-client-auth-key"))
-        app-auth-key (-> req :headers (get "x-app-auth-key"))
-        compressed-actions (-> req :body untar/slurp-bytes)]
-    (boilerplate-out req
-                 (biz/upload-actions client-auth-key
-                                     app-auth-key
-                                     compressed-actions))))
+   (let [client-auth-key (-> req :headers (get "x-client-auth-key"))
+         app-auth-key (-> req :headers (get "x-app-auth-key"))
+         compressed-actions (-> req :body untar/slurp-bytes)
+         validated (v/validate {"client_auth_key" (fn [v] (or (v/validate-presence v) (v/validate-string v)))
+                                 "app_auth_key" (fn [v] (or (v/validate-presence v) (v/validate-string v)))}
+                               {"client_auth_key" client-auth-key "app_auth_key" app-auth-key})]
+     (if (contains? validated :error)
+        (boilerplate-out req validated)
+        (boilerplate-out req
+                         (biz/upload-actions client-auth-key
+                                            app-auth-key
+                                            compressed-actions)))))
 
 (defn download-action [req]
-  (let [params (-> req :query-string url-search-params)
-        client-auth-key (get params "client_auth_key" nil)
-        app-auth-key (get params "app_auth_key" nil)
-        action-name (get params "action_name" nil)]
-    (biz/read-action client-auth-key app-auth-key action-name)))
+   (let [params (-> req :query-string url-search-params)
+         validated (v/validate {"client_auth_key" (fn [v] (or (v/validate-presence v) (v/validate-string v)))
+                                 "app_auth_key" (fn [v] (or (v/validate-presence v) (v/validate-string v)))
+                                 "action_name" (fn [v] (or (v/validate-presence v) (v/validate-string v)))}
+                               params)]
+     (if (contains? validated :error)
+        (boilerplate-out req validated)
+        (let [client-auth-key (get validated "client_auth_key")
+             app-auth-key (get validated "app_auth_key")
+             action-name (get validated "action_name")]
+          (biz/read-action client-auth-key app-auth-key action-name)))))
 
 (defn list-actions [req]
-  (let [params (-> req :query-string url-search-params)
-        client-auth-key (get params "client_auth_key" nil)
-        app-auth-key (get params "app_auth_key" nil)]
-    (boilerplate-out req (biz/list-actions client-auth-key app-auth-key))))
+   (let [params (-> req :query-string url-search-params)
+         validated (v/validate {"client_auth_key" (fn [v] (or (v/validate-presence v) (v/validate-string v)))
+                                 "app_auth_key" (fn [v] (or (v/validate-presence v) (v/validate-string v)))}
+                               params)]
+     (if (contains? validated :error)
+        (boilerplate-out req validated)
+        (let [client-auth-key (get validated "client_auth_key")
+             app-auth-key (get validated "app_auth_key")]
+          (boilerplate-out req (biz/list-actions client-auth-key app-auth-key))))))
 
 (defn delete-action [req]
-  (let [params (->> req :body slurp (boilerplate-in req))
-        validated (v/validate {"client_auth_key" (fn [v] (or (v/validate-presence v) (v/validate-string v)))
-                               "app_auth_key" (fn [v] (or (v/validate-presence v) (v/validate-string v)))
-                               "action_name" (fn [v] (or (v/validate-presence v) (v/validate-string v)))}
+   (let [params (->> req :body slurp (boilerplate-in req))
+         validated (v/validate {"client_auth_key" (fn [v] (or (v/validate-presence v) (v/validate-string v)))
+                                 "app_auth_key" (fn [v] (or (v/validate-presence v) (v/validate-string v)))
+                                 "action_name" (fn [v] (or (v/validate-presence v) (v/validate-string v)))}
                                params)]
-    (if (contains? validated :error)
-      (boilerplate-out req validated)
-      (let [client-auth-key (get validated "client_auth_key")
-            app-auth-key (get validated "app_auth_key")
-            action-name (get validated "action_name")]
-        (boilerplate-out req
-                         (biz/delete-action client-auth_auth_key
+     (if (contains? validated :error)
+        (boilerplate-out req validated)
+        (let [client-auth-key (get validated "client_auth_key")
+             app-auth-key (get validated "app_auth_key")
+             action-name (get validated "action_name")]
+          (boilerplate-out req
+                           (biz/delete-action client-auth-key
                                              app-auth-key
                                              action-name))))))
 
 (defn run-action [req]
-  (let [params (->> req :body slurp (boilerplate-in req))
-        validated (v/validate {"user_auth_key" (fn [v] (or (v/validate-presence v) (v/validate-string v)))
-                               "app_auth_key" (fn [v] (or (v/validate-presence v) (v/validate-string v)))
-                               "action_name" (fn [v] (or (v/validate-presence v) (v/validate-string v)))
-                               "action_param" (fn [v] (or (v/validate-presence v) (v/validate-string v)))}
+   (let [params (->> req :body slurp (boilerplate-in req))
+         validated (v/validate {"user_auth_key" (fn [v] (or (v/validate-presence v) (v/validate-string v)))
+                                 "app_auth_key" (fn [v] (or (v/validate-presence v) (v/validate-string v)))
+                                 "action_name" (fn [v] (or (v/validate-presence v) (v/validate-string v)))
+                                 "action_param" (fn [v] (or (v/validate-presence v) (v/validate-string v)))}
                                params)]
-    (if (contains? validated :error)
-      (boilerplate-out req validated)
-      (let [user-auth-key (get validated "user_auth_key")
-            app-auth-key (get validated "app_auth_key")
-            action-name (get validated "action_name")
-            action-param (get validated "action_param")]
-        (boilerplate-out req
-                         (proxies/run-action user-auth-key
+     (if (contains? validated :error)
+        (boilerplate-out req validated)
+        (let [user-auth-key (get validated "user_auth_key")
+             app-auth-key (get validated "app_auth_key")
+             action-name (get validated "action_name")
+             action-param (get validated "action_param")]
+          (boilerplate-out req
+                           (proxies/run-action user-auth-key
                                               app-auth-key
                                               action-name
                                               action-param))))))
 
 (defn- list-all-things [req f]
-  (-> req
-      :headers
-      (get "x-client-auth-key")
-      f
-      boilerplate-out))
+   (let [auth-key (-> req :headers (get "x-client-auth-key"))
+         validated (v/validate {"x_client_auth_key" (fn [v] (or (v/validate-presence v) (v/validate-string v)))}
+                               {"x_client_auth_key" auth-key})]
+     (if (contains? validated :error)
+        (boilerplate-out req validated)
+        (-> auth-key f boilerplate-out))))
 
 (defn list-all-clients [req]
-  (list-all-things req biz/list-all-clients))
+   (list-all-things req biz/list-all-clients))
 
 (defn list-all-apps [req]
-  (list-all-things req biz/list-all-apps))
+   (list-all-things req biz/list-all-apps))
 
 (defn list-all-files [req]
-  (list-all-things req biz/list-all-files))
+   (list-all-things req biz/list-all-files))
 
 (defn list-all-admins [req]
-  (list-all-things req biz/list-all-admins))
+   (list-all-things req biz/list-all-admins))
 
 (defn promote-to-admin [req]
-  (let [params (->> req :body slurp (boilerplate-in req))
-        validated (v/validate {"auth_key" (fn [v] (or (v/validate-presence v) (v/validate-string v)))
-                               "email" (fn [v] (or (v/validate-presence v) (v/validate-email v)))}
+   (let [params (->> req :body slurp (boilerplate-in req))
+         validated (v/validate {"auth_key" (fn [v] (or (v/validate-presence v) (v/validate-string v)))
+                                 "email" (fn [v] (or (v/validate-presence v) (v/validate-email v)))}
                                params)]
-    (if (contains? validated :error)
-      (boilerplate-out req validated)
-      (let [auth-key (get validated "auth_key")
-            email (get validated "email")]
-        (boilerplate-out req (biz/promote-to-admin auth-key email))))))
+     (if (contains? validated :error)
+        (boilerplate-out req validated)
+        (let [auth-key (get validated "auth_key")
+             email (get validated "email")]
+          (boilerplate-out req (biz/promote-to-admin auth-key email))))))
 
 (defn demote-admin [req]
-  (let [params (->> req :body slurp (boilerplate-in req))
-        validated (v/validate {"auth_key" (fn [v] (or (v/validate-presence v) (v/validate-string v)))
-                               "email" (fn [v] (or (v/validate-presence v) (v/validate-string v)))}
+   (let [params (->> req :body slurp (boilerplate-in req))
+         validated (v/validate {"auth_key" (fn [v] (or (v/validate-presence v) (v/validate-string v)))
+                                 "email" (fn [v] (or (v/validate-presence v) (v/validate-string v)))}
                                params)]
-    (if (contains? validated :error)
-      (boilerplate-out req validated)
-      (let [auth-key (get validated "auth_key")
-            email (get validated "email")]
-        (boilerplate-out req (biz/demote-admin auth-key email))))))
+     (if (contains? validated :error)
+        (boilerplate-out req validated)
+        (let [auth-key (get validated "auth_key")
+             email (get validated "email")]
+          (boilerplate-out req (biz/demote-admin auth-key email))))))
 
 (defn check-admin [req]
-  (list-all-things req biz/check-admin))
+   (list-all-things req biz/check-admin))
 
 (defroutes app-routes
   (POST "/clients/signup" [] clients-signup)
