@@ -1,13 +1,14 @@
 (ns br.bsb.liberdade.baas.test-helpers
-    (:require [clojure.test :refer [deftest testing is]]
-              [clj-http.client :as http]
-              [clojure.data.json :as json]
-              [next.jdbc :as jdbc]
-              [org.httpkit.server :as server]
-              [jumblerg.middleware.cors :refer [wrap-cors]]
-              [br.bsb.liberdade.baas.api :as api]
-              [br.bsb.liberdade.baas.db :as db])
-  (:import java.net.ServerSocket))
+     (:require [clojure.test :refer [deftest testing is]]
+             	[clojure.data.json :as json]
+             	[next.jdbc :as jdbc]
+             	[org.httpkit.server :as server]
+             	[jumblerg.middleware.cors :refer [wrap-cors]]
+             	[br.bsb.liberdade.baas.api :as api]
+             	[br.bsb.liberdade.baas.db :as db]
+   		  	[br.bsb.liberdade.baas.utils :as utils]
+          [next.jdbc.result-set :as rs])
+     (:import java.net.ServerSocket))
 
 (def server-thread-ref (atom nil))
 (def current-database-path (atom nil))
@@ -309,6 +310,76 @@
                                  :as :json})))
 
 (defn check-is-admin [base-url client-auth-key]
-  (json-response (http/get (str base-url "/admins/check")
-                           {:headers {"x-client-auth-key" client-auth-key}
-                            :as :json})))
+    (json-response (http/get (str base-url "/admins/check")
+                             {:headers {"x-client-auth-key" client-auth-key}
+                              :as :json})))
+
+;; ##############
+;; # DB HELPERS #
+;; ##############
+
+(defn- db-exec [query]
+   (with-open [conn (jdbc/get-connection db/ds)]
+     (jdbc/execute! conn ["PRAGMA foreign_keys = ON;"])
+      	(jdbc/execute! conn query {:builder-fn rs/as-unqualified-lower-maps})))
+
+(defn db-count-clients []
+   (-> "SELECT COUNT(*) AS count FROM clients" db-exec first :count))
+
+(defn db-get-client-by-email [email]
+   (first (db-exec (str "SELECT * FROM clients WHERE email='" email "'"))))
+
+(defn db-count-apps []
+   (-> "SELECT COUNT(*) AS count FROM apps" db-exec first :count))
+
+(defn db-get-app-by-auth-key [app-auth-key]
+   (let [app-id (-> app-auth-key utils/decode-secret :app_id)]
+     (first (db-exec (str "SELECT * FROM apps WHERE id=" app-id)))))
+
+(defn db-get-app-by-name-owner [app-name owner-email]
+   (first (db-exec (str "SELECT apps.* FROM apps JOIN clients ON apps.owner_id=clients.id WHERE apps.name='" app-name "' AND clients.email='" owner-email "'"))))
+
+(defn db-count-users [app-auth-key]
+   (let [app-id (-> app-auth-key utils/decode-secret :app_id)]
+     (-> (str "SELECT COUNT(*) AS count FROM users WHERE app_id=" app-id) db-exec first :count)))
+
+(defn db-get-user-by-email-app [email app-auth-key]
+   (let [app-id (-> app-auth-key utils/decode-secret :app_id)]
+     (first (db-exec (str "SELECT * FROM users WHERE email='" email "' AND app_id=" app-id)))))
+
+(defn db-count-files []
+   (-> "SELECT COUNT(*) AS count FROM files" db-exec first :count))
+
+(defn db-get-file-by-name-and-user [filename user-auth-key]
+   (let [user-info (utils/decode-secret user-auth-key)
+         user-id (:user_id user-info)]
+     (first (db-exec (str "SELECT * FROM files WHERE filename='" filename "' AND owner_id=" user-id)))))
+
+(defn db-count-app-files []
+   (-> "SELECT COUNT(*) AS count FROM files WHERE owner_id IS NULL" db-exec first :count))
+
+(defn db-get-app-file-by-name-and-app [filename app-auth-key]
+   (let [app-id (-> app-auth-key utils/decode-secret :app_id)]
+     (first (db-exec (str "SELECT * FROM files WHERE filename='" filename "' AND app_id=" app-id " AND owner_id IS NULL")))))
+
+(defn db-count-invites [app-auth-key]
+   (let [app-id (-> app-auth-key utils/decode-secret :app_id)]
+     (-> (str "SELECT COUNT(*) AS count FROM app_memberships WHERE app_id=" app-id) db-exec first :count)))
+
+(defn db-has-role-for-client [client-email app-auth-key role]
+   (let [app-id (-> app-auth-key utils/decode-secret :app_id)]
+     (= role (:role (first (db-exec (str "SELECT role FROM app_memberships JOIN clients ON app_memberships.client_id=clients.id WHERE clients.email='" client-email "' AND app_memberships.app_id=" app-id")))))))
+
+(defn db-is-admin [email]
+   (= "on" (:is_admin (first (db-exec (str "SELECT is_admin FROM clients WHERE email='" email "'"))))))
+
+(defn db-count-actions [app-auth-key]
+   (let [app-id (-> app-auth-key utils/decode-secret :app_id)]
+     (-> (str "SELECT COUNT(*) AS count FROM actions WHERE app_id=" app-id) db-exec first :count)))
+
+(defn db-get-action-by-name-app [action-name app-auth-key]
+   (let [app-id (-> app-auth-key utils/decode-secret :app_id)]
+     (first (db-exec (str "SELECT * FROM actions WHERE name='" action-name "' AND app_id=" app-id)))))
+
+(defn db-set-client-admin [email is-admin-flag]
+   (db-exec (str "UPDATE clients SET is_admin='" (if is-admin-flag "on" "off") "' WHERE email='" email "'")))
