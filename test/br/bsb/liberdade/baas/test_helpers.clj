@@ -1,10 +1,12 @@
 (ns br.bsb.liberdade.baas.test-helpers
-  (:require [clojure.test :refer [deftest testing is]]
-            [clj-http.client :as http]
-            [clojure.data.json :as json]
-            [next.jdbc :as jdbc]
-            [br.bsb.liberdade.baas.api :as api]
-            [br.bsb.liberdade.baas.db :as db])
+    (:require [clojure.test :refer [deftest testing is]]
+              [clj-http.client :as http]
+              [clojure.data.json :as json]
+              [next.jdbc :as jdbc]
+              [org.httpkit.server :as server]
+              [jumblerg.middleware.cors :refer [wrap-cors]]
+              [br.bsb.liberdade.baas.api :as api]
+              [br.bsb.liberdade.baas.db :as db])
   (:import java.net.ServerSocket))
 
 (def server-thread-ref (atom nil))
@@ -14,33 +16,32 @@
   (jdbc/get-datasource {:dbtype "sqlite"
                          :dbname database-path}))
 
+(defn- try-health-check [base-url]
+   (try
+     (= 200 (:status (http/get (str base-url "/health") {:timeout 2000})))
+     (catch Exception _ false)))
+
 (defn wait-for-server [base-url]
-  (loop [retry-count 0]
-    (if (>= retry-count 10)
-      (throw (ex-info "Server did not start within timeout" {:base-url base-url}))
-      (try
-        (let [response (http/get (str base-url "/health") {:timeout 2000})]
-          (cond
-            (= (:status response) 200)
-            base-url
-            :else
-            (do (Thread/sleep 1000)
-                (recur (inc retry-count)))))
-        (catch Exception _
-          (Thread/sleep 1000)
-          (recur (inc retry-count)))))))
+   (loop [retry-count 0]
+     (if (>= retry-count 10)
+       (throw (ex-info "Server did not start within timeout" {:base-url base-url}))
+       (if (try-health-check base-url)
+         base-url
+         (do (Thread/sleep 1000)
+              (recur (inc retry-count)))))))
 
 (defn start-server []
-  (let [temp-port-socket (ServerSocket. 0)
+   (let [temp-port-socket (ServerSocket. 0)
         port (.getLocalPort temp-port-socket)]
-    (.close temp-port-socket)
-    (System/setenv "API_PORT" (str port))
-    (reset! server-thread-ref
-            (doto (Thread. #(api/-main "up"))
-              (.setDaemon true)))
-    (.start @server-thread-ref)
-    (let [base-url (str "http://localhost:" port)]
-      (wait-for-server base-url)
+     (.close temp-port-socket)
+      (reset! server-thread-ref
+              (doto (Thread. #(server/run-server
+                                (wrap-cors #'api/app-routes #".*" {:security nil})
+                                {:port port}))
+                (.setDaemon true)))
+     (.start @server-thread-ref)
+     (let [base-url (str "http://localhost:" port)]
+       (wait-for-server base-url)
       base-url)))
 
 (defn stop-server [_base-url]
