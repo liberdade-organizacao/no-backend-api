@@ -1,5 +1,6 @@
 (ns br.bsb.liberdade.baas.test-helpers
      (:require [clojure.test :refer [deftest testing is]]
+               [clj-http.client :as http]
              	[clojure.data.json :as json]
              	[next.jdbc :as jdbc]
              	[org.httpkit.server :as server]
@@ -368,7 +369,7 @@
 
 (defn db-has-role-for-client [client-email app-auth-key role]
    (let [app-id (-> app-auth-key utils/decode-secret :app_id)]
-     (= role (:role (first (db-exec (str "SELECT role FROM app_memberships JOIN clients ON app_memberships.client_id=clients.id WHERE clients.email='" client-email "' AND app_memberships.app_id=" app-id")))))))
+     (= role (:role (first (db-exec (str "SELECT role FROM app_memberships JOIN clients ON app_memberships.client_id=clients.id WHERE clients.email='" client-email "' AND app_memberships.app_id=" app-id)))))))
 
 (defn db-is-admin [email]
    (= "on" (:is_admin (first (db-exec (str "SELECT is_admin FROM clients WHERE email='" email "'"))))))
