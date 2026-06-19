@@ -16,12 +16,23 @@
                  [org.xerial/sqlite-jdbc "3.46.1.0"]
                  [middlesphere/clj-compress "0.1.0"]
                  [clojure-msgpack "1.2.1"]
-                 [clj-http "3.13.0"]]
+                 [clj-http "3.13.0"]
+                 ;; Frege runtime — must match the version used by lein-fregec
+                 [org.frege-lang/frege "3.24-7.100"]]
   :min-lein-version "2.9.8"
   :main ^:skip-aot br.bsb.liberdade.baas.api
   :target-path "target/%s"
+  ;; Frege source directory — read by lein-fregec, compiled into :compile-path
+  :frege-source-paths ["src-frege"]
+  ;; The bundled Frege prelude was compiled targeting Java 1.7; match it.
+  :fregec-options ["-target" "1.7"]
+  ;; Include BusinessBridge.java in javac compilation
+  :java-source-paths ["src"]
+  ;; Ensure Frege compiles before javac/compile in every profile (test, uberjar, …)
+  :prep-tasks ["fregec" "javac" "compile"]
   :profiles {:uberjar {:aot :all
                        :uberjar-name "br.bsb.liberdade.baas.api.jar"
                        :jvm-opts ["-Dclojure.compiler.direct-linking=true"]}}
-  :plugins [[lein-ancient "1.0.0-RC3"]])
-
+  :plugins [[lein-ancient "1.0.0-RC3"]
+            ;; Frege compiler plugin — provides `lein fregec`
+            [lein-fregec "3.24-7.100c"]])

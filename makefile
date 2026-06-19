@@ -3,8 +3,15 @@ API_PORT=7780
 .PHONY: default
 default: build
 
+# Compile Frege sources (src-frege/) → target/fregec/ .class files.
+# Must run before tests or uberjar because BusinessBridge.java imports
+# the compiled Baas.Business class.
+.PHONY: frege
+frege:
+	lein fregec
+
 .PHONY: test
-test:
+test: frege
 	lein test
 
 .PHONY: integration-test
@@ -18,7 +25,7 @@ integration-test:
 	lsof -i tcp:$(API_PORT) | grep -v PID | awk '{print $$2}' | xargs kill
 
 .PHONY: build
-build: test
+build: frege test
 	lein uberjar
 
 .PHONY: pack
