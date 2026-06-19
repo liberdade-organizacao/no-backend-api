@@ -1,0 +1,891 @@
+--- Business logic module for the BaaS API, implemented in Frege.
+--- Mirrors br.bsb.liberdade.baas.business (Clojure) and delegates
+--- all I/O to the existing db / utils / fs Clojure namespaces via
+--- Java interop on clojure.lang.IFn.
+module Baas.Business where
+
+import Java.Lang (Object)
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- § 1  Core Java / Clojure interop declarations
+-- ─────────────────────────────────────────────────────────────────────────────
+
+--- Clojure callable interface
+data IFn = pure native clojure.lang.IFn
+
+--- Clojure persistent (immutable) map returned by db operations
+data CPMap = pure native clojure.lang.IPersistentMap
+
+--- Mutable Java HashMap used to build result objects
+data JMap = pure native java.util.HashMap
+
+--- Obtain a Clojure Var by namespace and name.
+--- RT.var is an idempotent registry lookup; treating it as pure is safe.
+pure native rtVar "clojure.lang.RT.var" :: String -> String -> IFn
+
+--- Invoke a Clojure function; the Maybe wrapper maps nil → Nothing.
+native invoke1  "invoke" :: IFn -> Object -> IO (Maybe Object)
+native invoke2  "invoke" :: IFn -> Object -> Object -> IO (Maybe Object)
+native invoke3  "invoke" :: IFn -> Object -> Object -> Object -> IO (Maybe Object)
+
+--- Invoke a Clojure function; always returns an Object (for fns that never return nil).
+native invokeNN1 "invoke" :: IFn -> Object -> IO Object
+native invokeNN2 "invoke" :: IFn -> Object -> Object -> IO Object
+
+--- Mutable java.util.HashMap operations
+native newJMap  "new java.util.HashMap" :: ()    -> IO JMap
+native jmapPut  "put"                   :: JMap  -> String -> Object -> IO Object
+
+--- Access a value in a Clojure persistent map by keyword key.
+native valAt "valAt" :: CPMap -> Object -> IO (Maybe Object)
+
+--- Create a Clojure keyword object used as a map key
+pure native kw "clojure.lang.Keyword.intern" :: String -> Object
+
+--- Create a Clojure map from a java.util.HashMap
+native toCljMap "clojure.lang.PersistentHashMap.create" :: JMap -> IO Object
+
+--- An empty Clojure list (returned instead of null on auth failures)
+pure native emptyList "clojure.lang.PersistentList.EMPTY" :: Object
+
+--- Unsafe casts — Frege's "(Type)" native form applies the cast to its one argument
+pure native asCPMap  "(clojure.lang.IPersistentMap)" :: Object -> CPMap
+pure native asObject "(Object)"                       :: a -> Object
+
+--- Number → Long via Clojure RT: handles Integer, Long, and other numeric types
+pure native objToLong "clojure.lang.RT.longCast" :: Object -> Long
+
+--- Call toString() on any Object (Object in Frege 3.24 lacks this member)
+pure native objStr   "toString"                        :: Object -> String
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- § 2  Clojure function references (looked up once at load time)
+-- ─────────────────────────────────────────────────────────────────────────────
+
+-- utils namespace
+encodeSecretFn, decodeSecretFn, hideFn :: IFn
+encodeSecretFn = rtVar "br.bsb.liberdade.baas.utils" "encode-secret"
+decodeSecretFn = rtVar "br.bsb.liberdade.baas.utils" "decode-secret"
+hideFn         = rtVar "br.bsb.liberdade.baas.utils" "hide"
+
+encodeDataFn, decodeDataFn :: IFn
+encodeDataFn = rtVar "br.bsb.liberdade.baas.utils" "encode-data"
+decodeDataFn = rtVar "br.bsb.liberdade.baas.utils" "decode-data"
+
+-- db namespace
+dbRunOpFn, dbRunOpFirstFn :: IFn
+dbRunOpFn      = rtVar "br.bsb.liberdade.baas.db" "run-operation"
+dbRunOpFirstFn = rtVar "br.bsb.liberdade.baas.db" "run-operation-first"
+
+-- fs namespace
+fsWriteFn, fsReadFn, fsDeleteFn :: IFn
+fsWriteFn  = rtVar "br.bsb.liberdade.baas.fs" "write-file"
+fsReadFn   = rtVar "br.bsb.liberdade.baas.fs" "read-file"
+fsDeleteFn = rtVar "br.bsb.liberdade.baas.fs" "delete-file"
+
+-- tar/decompress namespace
+untarExtractFn :: IFn
+untarExtractFn = rtVar "br.bsb.liberdade.baas.tar.decompress" "extract"
+
+-- clojure.core utilities
+cljCountFn, cljSeqFn, cljFirstFn, cljRestFn, cljKeyFn, cljValFn :: IFn
+cljCountFn = rtVar "clojure.core" "count"
+cljSeqFn   = rtVar "clojure.core" "seq"
+cljFirstFn = rtVar "clojure.core" "first"
+cljRestFn  = rtVar "clojure.core" "rest"
+cljKeyFn   = rtVar "clojure.core" "key"
+cljValFn   = rtVar "clojure.core" "val"
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- § 3  Low-level helpers
+-- ─────────────────────────────────────────────────────────────────────────────
+
+--- Build a Clojure map from a list of (key, Object) pairs.
+--- Used for SQL parameters where every value is concrete.
+buildParams :: [(String, Object)] -> IO Object
+buildParams kvs = do
+    m <- newJMap ()
+    mapM_ (\(k, v) -> jmapPut m k v) kvs
+    toCljMap m
+
+--- Build a Clojure result map from (key, Maybe Object) pairs.
+--- Nothing values are omitted; Clojure returns nil for missing keys,
+--- which is semantically identical to an explicit nil value.
+buildMap :: [(String, Maybe Object)] -> IO Object
+buildMap kvs = do
+    m <- newJMap ()
+    mapM_ (\(k, mv) -> case mv of
+        Nothing -> return ()
+        Just v  -> void (jmapPut m k v)) kvs
+    toCljMap m
+
+--- Return the count of a Clojure sequence.
+--- objToLong handles both Integer and Long (Clojure count returns Integer-boxed int).
+seqCount :: Object -> IO Long
+seqCount obj = do
+    result <- invokeNN1 cljCountFn obj
+    return (objToLong result)
+
+--- Decode a JWT auth key and return its payload as a CPMap.
+decodeKey :: String -> IO (Maybe CPMap)
+decodeKey key = do
+    result <- invoke1 decodeSecretFn (asObject key)
+    return (fmap asCPMap result)
+
+--- Extract a String field from a CPMap using a Clojure keyword.
+getField :: CPMap -> String -> IO (Maybe String)
+getField m field = do
+    result <- valAt m (kw field)
+    case result of
+        Nothing -> return Nothing
+        Just v  -> return (Just (objStr v))
+
+--- Call db/run-operation and return the raw Clojure seq.
+dbRunOp :: String -> [(String, Object)] -> IO Object
+dbRunOp operation params = do
+    paramsMap <- buildParams params
+    invokeNN2 dbRunOpFn (asObject operation) paramsMap
+
+--- Call db/run-operation-first, returning the first row map (or Nothing).
+dbRunOpFirst :: String -> [(String, Object)] -> IO (Maybe CPMap)
+dbRunOpFirst operation params = do
+    paramsMap <- buildParams params
+    result    <- invoke2 dbRunOpFirstFn (asObject operation) paramsMap
+    return (fmap asCPMap result)
+
+--- Hash a password via utils/hide.
+hashPassword :: String -> IO String
+hashPassword pwd = do
+    result <- invoke1 hideFn (asObject pwd)
+    case result of
+        Nothing -> return ""
+        Just v  -> return (objStr v)
+
+--- Encode a map as a JWT token via utils/encode-secret.
+encodeSecretMap :: [(String, Object)] -> IO String
+encodeSecretMap kvs = do
+    m      <- buildParams kvs
+    result <- invoke1 encodeSecretFn m
+    case result of
+        Nothing -> return ""
+        Just v  -> return (objStr v)
+
+--- Standard result map containing only "error".
+stdResult :: Maybe String -> IO Object
+stdResult err = buildMap [("error", fmap asObject err)]
+
+--- Result map with "auth_key" and "error".
+authKeyResult :: Maybe String -> Maybe String -> IO Object
+authKeyResult authKey err =
+    buildMap [ ("auth_key", fmap asObject authKey)
+             , ("error",    fmap asObject err)
+             ]
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- § 4  Auth-key generation helpers
+-- ─────────────────────────────────────────────────────────────────────────────
+
+newClientAuthKey :: String -> String -> IO String
+newClientAuthKey clientId isAdmin =
+    encodeSecretMap [("client_id", asObject clientId), ("is_admin", asObject isAdmin)]
+
+newAppAuthKey :: String -> IO String
+newAppAuthKey appId =
+    encodeSecretMap [("app_id", asObject appId)]
+
+newUserAuthKey :: String -> String -> IO String
+newUserAuthKey appId userId =
+    encodeSecretMap [("user_id", asObject userId), ("app_id", asObject appId)]
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- § 5  Client account functions
+-- ─────────────────────────────────────────────────────────────────────────────
+
+newClient :: String -> String -> String -> IO Object
+newClient email password isAdmin = do
+    pwd <- hashPassword password
+    result <- dbRunOpFirst "create-client-account.sql"
+                [ ("email",    asObject email)
+                , ("password", asObject pwd)
+                , ("is_admin", asObject isAdmin)
+                ]
+    case result of
+        Nothing  -> authKeyResult Nothing (Just "Email already exists")
+        Just row -> do
+            cid   <- getField row "id"
+            admin <- getField row "is_admin"
+            case cid of
+                Nothing  -> authKeyResult Nothing (Just "Failed to create account")
+                Just id' -> do
+                    key <- newClientAuthKey id' (fromMaybe "off" admin)
+                    authKeyResult (Just key) Nothing
+
+authClient :: String -> String -> IO Object
+authClient email password = do
+    pwd    <- hashPassword password
+    result <- dbRunOpFirst "auth-client.sql"
+                [ ("email",    asObject email)
+                , ("password", asObject pwd)
+                ]
+    case result of
+        Nothing  -> authKeyResult Nothing (Just "Wrong email or password")
+        Just row -> do
+            cid   <- getField row "id"
+            admin <- getField row "is_admin"
+            case cid of
+                Nothing  -> authKeyResult Nothing (Just "Wrong email or password")
+                Just id' -> do
+                    key <- newClientAuthKey id' (fromMaybe "off" admin)
+                    authKeyResult (Just key) Nothing
+
+changeClientPassword :: String -> String -> String -> IO Object
+changeClientPassword authKey oldPwd newPwd = do
+    clientInfo <- decodeKey authKey
+    case clientInfo of
+        Nothing -> stdResult (Just "Invalid auth key")
+        Just ci -> do
+            cid  <- getField ci "client_id"
+            oldH <- hashPassword oldPwd
+            newH <- hashPassword newPwd
+            result <- dbRunOp "change-client-password.sql"
+                        [ ("client_id",    asObject (fromMaybe "NULL" cid))
+                        , ("old_password", asObject oldH)
+                        , ("new_password", asObject newH)
+                        ]
+            n <- seqCount result
+            stdResult (if n > 0 then Nothing else Just "Failed to change password")
+
+deleteClient :: String -> String -> IO Object
+deleteClient authKey password = do
+    clientInfo <- decodeKey authKey
+    case clientInfo of
+        Nothing -> stdResult (Just "Invalid auth key")
+        Just ci -> do
+            cid <- getField ci "client_id"
+            pwd <- hashPassword password
+            result <- dbRunOp "delete-client.sql"
+                        [ ("id",       asObject (fromMaybe "NULL" cid))
+                        , ("password", asObject pwd)
+                        ]
+            n <- seqCount result
+            stdResult (if n > 0 then Nothing else Just "Failed to delete account")
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- § 6  App management functions
+-- ─────────────────────────────────────────────────────────────────────────────
+
+--- Return the client's role in an app, or Nothing if they have no access.
+getClientRoleInApp :: String -> String -> IO (Maybe String)
+getClientRoleInApp clientId appId = do
+    result <- dbRunOpFirst "get-client-app-role.sql"
+                [ ("client_id", asObject clientId)
+                , ("app_id",    asObject appId)
+                ]
+    case result of
+        Nothing  -> return Nothing
+        Just row -> getField row "role"
+
+newApp :: String -> String -> IO Object
+newApp clientAuthKey appName = do
+    clientInfo <- decodeKey clientAuthKey
+    case clientInfo of
+        Nothing -> authKeyResult Nothing (Just "Invalid auth key")
+        Just ci -> do
+            cid <- getField ci "client_id"
+            case cid of
+                Nothing       -> authKeyResult Nothing (Just "Invalid auth key")
+                Just clientId -> do
+                    appRow <- dbRunOpFirst "create-app.sql"
+                                [ ("owner_id", asObject clientId)
+                                , ("app_name", asObject appName)
+                                ]
+                    case appRow of
+                        Nothing  -> authKeyResult Nothing (Just "Failed to create app")
+                        Just row -> do
+                            appId' <- getField row "id"
+                            case appId' of
+                                Nothing    -> authKeyResult Nothing (Just "Failed to create app")
+                                Just appId -> do
+                                    _ <- dbRunOpFirst "invite-to-app.sql"
+                                            [ ("app_id",    asObject appId)
+                                            , ("client_id", asObject clientId)
+                                            , ("role",      asObject "admin")
+                                            ]
+                                    key <- newAppAuthKey appId
+                                    authKeyResult (Just key) Nothing
+
+getClientsApps :: String -> IO Object
+getClientsApps clientAuthKey = do
+    clientInfo <- decodeKey clientAuthKey
+    case clientInfo of
+        Nothing -> buildMap [("error", Just (asObject "Invalid auth key")), ("apps", Nothing)]
+        Just ci -> do
+            cid  <- getField ci "client_id"
+            apps <- dbRunOp "get-clients-apps.sql"
+                        [("client_id", asObject (fromMaybe "NULL" cid))]
+            buildMap [("error", Nothing), ("apps", Just apps)]
+
+deleteApp :: String -> String -> IO Object
+deleteApp clientAuthKey appAuthKey = do
+    clientInfo <- decodeKey clientAuthKey
+    appInfo    <- decodeKey appAuthKey
+    case (clientInfo, appInfo) of
+        (Just ci, Just ai) -> do
+            cid   <- getField ci "client_id"
+            appId <- getField ai "app_id"
+            case (cid, appId) of
+                (Just clientId, Just aId) -> do
+                    role <- getClientRoleInApp clientId aId
+                    case role of
+                        Just "admin" -> do
+                            _ <- dbRunOpFirst "delete-app.sql" [("app_id", asObject aId)]
+                            stdResult Nothing
+                        _ -> stdResult (Just "User not allowed to delete app")
+                _ -> stdResult (Just "Invalid auth keys")
+        _ -> stdResult (Just "Invalid auth keys")
+
+inviteToAppByEmail :: String -> String -> String -> String -> IO Object
+inviteToAppByEmail inviterAuthKey appAuthKey inviteeEmail inviteeRole = do
+    inviterInfo <- decodeKey inviterAuthKey
+    appInfo     <- decodeKey appAuthKey
+    case (inviterInfo, appInfo) of
+        (Just ii, Just ai) -> do
+            inviterId <- getField ii "client_id"
+            appId     <- getField ai "app_id"
+            case (inviterId, appId) of
+                (Just iid, Just aid) -> do
+                    role <- getClientRoleInApp iid aid
+                    case role of
+                        Just "admin" -> do
+                            inviteeRow <- dbRunOpFirst "get-client-by-email.sql"
+                                            [("email", asObject inviteeEmail)]
+                            case inviteeRow of
+                                Nothing -> stdResult (Just "Invitee email not found")
+                                Just row -> do
+                                    inviteeId <- getField row "id"
+                                    case inviteeId of
+                                        Nothing  -> stdResult (Just "Invitee email not found")
+                                        Just eid -> do
+                                            _ <- dbRunOpFirst "invite-to-app.sql"
+                                                    [ ("app_id",    asObject aid)
+                                                    , ("client_id", asObject eid)
+                                                    , ("role",      asObject inviteeRole)
+                                                    ]
+                                            stdResult Nothing
+                        _ -> stdResult (Just "Client has no rights to do this")
+                _ -> stdResult (Just "Invalid auth keys")
+        _ -> stdResult (Just "Invalid auth keys")
+
+revokeFromAppByEmail :: String -> String -> String -> IO Object
+revokeFromAppByEmail revokerAuthKey appAuthKey revokeeEmail = do
+    revokerInfo <- decodeKey revokerAuthKey
+    appInfo     <- decodeKey appAuthKey
+    case (revokerInfo, appInfo) of
+        (Just ri, Just ai) -> do
+            revokerId <- getField ri "client_id"
+            appId     <- getField ai "app_id"
+            case (revokerId, appId) of
+                (Just rid, Just aid) -> do
+                    role <- getClientRoleInApp rid aid
+                    case role of
+                        Just "admin" -> do
+                            result <- dbRunOp "revoke-from-app.sql"
+                                        [ ("revoked_email", asObject revokeeEmail)
+                                        , ("app_id",        asObject aid)
+                                        ]
+                            n <- seqCount result
+                            stdResult (if n > 0 then Nothing else Just "No one was removed")
+                        _ -> stdResult (Just "Client has no rights to do this")
+                _ -> stdResult (Just "Invalid auth keys")
+        _ -> stdResult (Just "Invalid auth keys")
+
+listAppUsers :: String -> String -> IO Object
+listAppUsers clientAuthKey appAuthKey = do
+    clientInfo <- decodeKey clientAuthKey
+    appInfo    <- decodeKey appAuthKey
+    case (clientInfo, appInfo) of
+        (Just ci, Just ai) -> do
+            cid   <- getField ci "client_id"
+            appId <- getField ai "app_id"
+            case (cid, appId) of
+                (Just clientId, Just aId) -> do
+                    role <- getClientRoleInApp clientId aId
+                    case role of
+                        Nothing ->
+                            buildMap [ ("error", Just (asObject "Not enough permissions"))
+                                     , ("users", Nothing)
+                                     ]
+                        Just _ -> do
+                            users <- dbRunOp "list-app-users.sql" [("app_id", asObject aId)]
+                            buildMap [("error", Nothing), ("users", Just users)]
+                _ -> buildMap [("error", Just (asObject "Invalid auth keys")), ("users", Nothing)]
+        _ -> buildMap [("error", Just (asObject "Invalid auth keys")), ("users", Nothing)]
+
+listAppManagers :: String -> String -> IO Object
+listAppManagers clientAuthKey appAuthKey = do
+    clientInfo <- decodeKey clientAuthKey
+    appInfo    <- decodeKey appAuthKey
+    case (clientInfo, appInfo) of
+        (Just ci, Just ai) -> do
+            cid   <- getField ci "client_id"
+            appId <- getField ai "app_id"
+            case (cid, appId) of
+                (Just clientId, Just aId) -> do
+                    role <- getClientRoleInApp clientId aId
+                    case role of
+                        Nothing ->
+                            buildMap [ ("error", Just (asObject "Not enough permissions"))
+                                     , ("clients", Nothing)
+                                     ]
+                        Just _ -> do
+                            managers <- dbRunOp "list-app-managers.sql" [("app_id", asObject aId)]
+                            buildMap [("error", Nothing), ("clients", Just managers)]
+                _ -> buildMap [("error", Just (asObject "Invalid auth keys")), ("clients", Nothing)]
+        _ -> buildMap [("error", Just (asObject "Invalid auth keys")), ("clients", Nothing)]
+
+revokeAdminAccess :: String -> String -> String -> IO Object
+revokeAdminAccess clientAuthKey appAuthKey emailToRevoke = do
+    clientInfo <- decodeKey clientAuthKey
+    appInfo    <- decodeKey appAuthKey
+    case (clientInfo, appInfo) of
+        (Just ci, Just ai) -> do
+            cid   <- getField ci "client_id"
+            appId <- getField ai "app_id"
+            case (cid, appId) of
+                (Just clientId, Just aId) -> do
+                    role <- getClientRoleInApp clientId aId
+                    case role of
+                        Just "admin" -> do
+                            _ <- dbRunOp "revoke-manager.sql"
+                                    [ ("app_id",        asObject aId)
+                                    , ("revoked_email", asObject emailToRevoke)
+                                    ]
+                            stdResult Nothing
+                        _ -> stdResult (Just "not allowed")
+                _ -> stdResult (Just "Invalid auth keys")
+        _ -> stdResult (Just "Invalid auth keys")
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- § 7  User account functions
+-- ─────────────────────────────────────────────────────────────────────────────
+
+newUser :: String -> String -> String -> IO Object
+newUser appAuthKey email password = do
+    appInfo <- decodeKey appAuthKey
+    case appInfo of
+        Nothing -> authKeyResult Nothing (Just "Invalid auth key")
+        Just ai -> do
+            appId <- getField ai "app_id"
+            case appId of
+                Nothing  -> authKeyResult Nothing (Just "Invalid auth key")
+                Just aId -> do
+                    pwd    <- hashPassword password
+                    result <- dbRunOpFirst "create-user.sql"
+                                [ ("app_id",   asObject aId)
+                                , ("email",    asObject email)
+                                , ("password", asObject pwd)
+                                ]
+                    case result of
+                        Nothing  -> authKeyResult Nothing (Just "Could not create user")
+                        Just row -> do
+                            uid <- getField row "id"
+                            case uid of
+                                Nothing     -> authKeyResult Nothing (Just "Could not create user")
+                                Just userId -> do
+                                    key <- newUserAuthKey aId userId
+                                    authKeyResult (Just key) Nothing
+
+authUser :: String -> String -> String -> IO Object
+authUser appAuthKey email password = do
+    appInfo <- decodeKey appAuthKey
+    case appInfo of
+        Nothing -> authKeyResult Nothing (Just "Invalid auth key")
+        Just ai -> do
+            appId <- getField ai "app_id"
+            case appId of
+                Nothing  -> authKeyResult Nothing (Just "Invalid auth key")
+                Just aId -> do
+                    pwd    <- hashPassword password
+                    result <- dbRunOpFirst "auth-user.sql"
+                                [ ("app_id",   asObject aId)
+                                , ("email",    asObject email)
+                                , ("password", asObject pwd)
+                                ]
+                    case result of
+                        Nothing  -> authKeyResult Nothing (Just "Could not authorize user")
+                        Just row -> do
+                            uid <- getField row "id"
+                            case uid of
+                                Nothing     -> authKeyResult Nothing (Just "Could not authorize user")
+                                Just userId -> do
+                                    key <- newUserAuthKey aId userId
+                                    authKeyResult (Just key) Nothing
+
+deleteUser :: String -> String -> IO Object
+deleteUser userAuthKey password = do
+    userInfo <- decodeKey userAuthKey
+    case userInfo of
+        Nothing -> stdResult (Just "Invalid auth key")
+        Just ui -> do
+            uid <- getField ui "user_id"
+            pwd <- hashPassword password
+            result <- dbRunOp "delete-user.sql"
+                        [ ("user_id",  asObject (fromMaybe "NULL" uid))
+                        , ("password", asObject pwd)
+                        ]
+            n <- seqCount result
+            stdResult (if n > 0 then Nothing else Just "Failed to delete user")
+
+updateUserPassword :: String -> String -> String -> IO Object
+updateUserPassword userAuthKey oldPwd newPwd = do
+    userInfo <- decodeKey userAuthKey
+    case userInfo of
+        Nothing -> stdResult (Just "Invalid auth key")
+        Just ui -> do
+            uid   <- getField ui "user_id"
+            appId <- getField ui "app_id"
+            oldH  <- hashPassword oldPwd
+            newH  <- hashPassword newPwd
+            result <- dbRunOp "change-user-password.sql"
+                        [ ("user_id",     asObject (fromMaybe "NULL" uid))
+                        , ("app_id",      asObject (fromMaybe "NULL" appId))
+                        , ("old_password", asObject oldH)
+                        , ("new_password", asObject newH)
+                        ]
+            n <- seqCount result
+            stdResult (if n > 0 then Nothing else Just "Failed to change password")
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- § 8  File operations
+-- ─────────────────────────────────────────────────────────────────────────────
+
+userFilePath :: String -> String -> String -> String
+userFilePath appId userId filename = "a" ++ appId ++ "/u" ++ userId ++ "/" ++ filename
+
+appFilePath :: String -> String -> String
+appFilePath appId filename = "a" ++ appId ++ "/" ++ filename
+
+--- Upload a file: write to filesystem then record in the database.
+uploadFile :: String -> String -> String -> String -> String -> IO Object
+uploadFile appId userId filename filepath contents = do
+    encoded <- do
+        r <- invoke1 encodeDataFn (asObject contents)
+        case r of
+            Nothing -> return contents
+            Just v  -> return (objStr v)
+    _ <- invokeNN2 fsWriteFn (asObject filepath) (asObject encoded)
+    result <- dbRunOp "upload-file.sql"
+                [ ("app_id",   asObject appId)
+                , ("user_id",  asObject userId)
+                , ("filename", asObject filename)
+                , ("filepath", asObject filepath)
+                , ("file_size", asObject (show (length encoded)))
+                ]
+    n <- seqCount result
+    stdResult (if n > 0 then Nothing else Just "Failed to upload file")
+
+uploadUserFile :: String -> String -> String -> IO Object
+uploadUserFile userAuthKey filename contents = do
+    userInfo <- decodeKey userAuthKey
+    case userInfo of
+        Nothing -> stdResult (Just "Invalid auth key")
+        Just ui -> do
+            appId  <- getField ui "app_id"
+            userId <- getField ui "user_id"
+            case (appId, userId) of
+                (Just aId, Just uId) ->
+                    uploadFile aId uId filename (userFilePath aId uId filename) contents
+                _ -> stdResult (Just "Invalid auth key")
+
+downloadUserFile :: String -> String -> IO (Maybe Object)
+downloadUserFile userAuthKey filename = do
+    userInfo <- decodeKey userAuthKey
+    case userInfo of
+        Nothing -> return Nothing
+        Just ui -> do
+            appId  <- getField ui "app_id"
+            userId <- getField ui "user_id"
+            case (appId, userId) of
+                (Just aId, Just uId) -> do
+                    raw <- invoke1 fsReadFn (asObject (userFilePath aId uId filename))
+                    case raw of
+                        Nothing -> return Nothing
+                        Just v  -> invoke1 decodeDataFn v
+                _ -> return Nothing
+
+listUserFiles :: String -> IO Object
+listUserFiles userAuthKey = do
+    userInfo <- decodeKey userAuthKey
+    case userInfo of
+        Nothing -> return emptyList
+        Just ui -> do
+            appId  <- getField ui "app_id"
+            userId <- getField ui "user_id"
+            dbRunOp "list-user-files.sql"
+                [ ("app_id",  asObject (fromMaybe "NULL" appId))
+                , ("user_id", asObject (fromMaybe "NULL" userId))
+                ]
+
+deleteUserFile :: String -> String -> IO Object
+deleteUserFile userAuthKey filename = do
+    userInfo <- decodeKey userAuthKey
+    case userInfo of
+        Nothing -> stdResult (Just "Invalid auth key")
+        Just ui -> do
+            appId  <- getField ui "app_id"
+            userId <- getField ui "user_id"
+            case (appId, userId) of
+                (Just aId, Just uId) -> do
+                    let fp = userFilePath aId uId filename
+                    _ <- invoke1 fsDeleteFn (asObject fp)
+                    result <- dbRunOp "delete-file.sql" [("filepath", asObject fp)]
+                    n <- seqCount result
+                    stdResult (if n > 0 then Nothing else Just "Failed to delete this file")
+                _ -> stdResult (Just "Invalid auth key")
+
+--- Verify the caller has any role in the app.
+requireAnyRole :: String -> String -> IO (Either String (String, String))
+requireAnyRole clientAuthKey appAuthKey = do
+    clientInfo <- decodeKey clientAuthKey
+    appInfo    <- decodeKey appAuthKey
+    case (clientInfo, appInfo) of
+        (Just ci, Just ai) -> do
+            cid   <- getField ci "client_id"
+            appId <- getField ai "app_id"
+            case (cid, appId) of
+                (Just clientId, Just aId) -> do
+                    role <- getClientRoleInApp clientId aId
+                    case role of
+                        Nothing -> return (Left "Not enough permissions")
+                        Just _  -> return (Right (clientId, aId))
+                _ -> return (Left "Invalid auth keys")
+        _ -> return (Left "Invalid auth keys")
+
+uploadAppFile :: String -> String -> String -> String -> IO Object
+uploadAppFile clientAuthKey appAuthKey filename contents = do
+    ids <- requireAnyRole clientAuthKey appAuthKey
+    case ids of
+        Left err         -> stdResult (Just err)
+        Right (_, appId) ->
+            uploadFile appId "NULL" filename (appFilePath appId filename) contents
+
+downloadAppFile :: String -> String -> String -> IO (Maybe Object)
+downloadAppFile clientAuthKey appAuthKey filename = do
+    ids <- requireAnyRole clientAuthKey appAuthKey
+    case ids of
+        Left _           -> return Nothing
+        Right (_, appId) -> do
+            raw <- invoke1 fsReadFn (asObject (appFilePath appId filename))
+            case raw of
+                Nothing -> return Nothing
+                Just v  -> invoke1 decodeDataFn v
+
+deleteAppFile :: String -> String -> String -> IO Object
+deleteAppFile clientAuthKey appAuthKey filename = do
+    ids <- requireAnyRole clientAuthKey appAuthKey
+    case ids of
+        Left err         -> stdResult (Just err)
+        Right (_, appId) -> do
+            let fp = appFilePath appId filename
+            _ <- invoke1 fsDeleteFn (asObject fp)
+            result <- dbRunOp "delete-file.sql" [("filepath", asObject fp)]
+            n <- seqCount result
+            stdResult (if n > 0 then Nothing else Just "Failed to delete this file")
+
+listAppFiles :: String -> String -> IO Object
+listAppFiles clientAuthKey appAuthKey = do
+    ids <- requireAnyRole clientAuthKey appAuthKey
+    case ids of
+        Left err               -> buildMap [("error", Just (asObject err)), ("files", Nothing)]
+        Right (clientId, appId) -> do
+            files <- dbRunOp "list-app-files.sql"
+                        [ ("app_id",  asObject appId)
+                        , ("user_id", asObject clientId)
+                        ]
+            buildMap [("error", Nothing), ("files", Just files)]
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- § 9  Action (serverless function) management
+-- ─────────────────────────────────────────────────────────────────────────────
+
+upsertAction :: String -> String -> String -> String -> IO Object
+upsertAction clientAuthKey appAuthKey actionName script = do
+    ids <- requireAnyRole clientAuthKey appAuthKey
+    case ids of
+        Left err         -> stdResult (Just err)
+        Right (_, appId) -> do
+            result <- dbRunOp "upload-action.sql"
+                        [ ("app_id", asObject appId)
+                        , ("name",   asObject actionName)
+                        , ("script", asObject script)
+                        ]
+            n <- seqCount result
+            stdResult (if n > 0 then Nothing else Just "Failed to upload script")
+
+updateAction :: String -> String -> String -> String -> String -> IO Object
+updateAction clientAuthKey appAuthKey oldName newName script = do
+    ids <- requireAnyRole clientAuthKey appAuthKey
+    case ids of
+        Left err         -> stdResult (Just err)
+        Right (_, appId) -> do
+            result <- dbRunOp "update-action.sql"
+                        [ ("app_id",   asObject appId)
+                        , ("old_name", asObject oldName)
+                        , ("new_name", asObject newName)
+                        , ("script",   asObject script)
+                        ]
+            n <- seqCount result
+            stdResult (if n > 0 then Nothing else Just "Failed to upload script")
+
+deleteAction :: String -> String -> String -> IO Object
+deleteAction clientAuthKey appAuthKey actionName = do
+    ids <- requireAnyRole clientAuthKey appAuthKey
+    case ids of
+        Left err         -> stdResult (Just err)
+        Right (_, appId) -> do
+            result <- dbRunOp "delete-action.sql"
+                        [ ("app_id", asObject appId)
+                        , ("name",   asObject actionName)
+                        ]
+            n <- seqCount result
+            stdResult (if n > 0 then Nothing else Just "Failed to upload script")
+
+readAction :: String -> String -> String -> IO (Maybe Object)
+readAction clientAuthKey appAuthKey actionName = do
+    ids <- requireAnyRole clientAuthKey appAuthKey
+    case ids of
+        Left _           -> return Nothing
+        Right (_, appId) -> do
+            result <- dbRunOpFirst "download-action.sql"
+                        [ ("app_id", asObject appId)
+                        , ("name",   asObject actionName)
+                        ]
+            case result of
+                Nothing  -> return Nothing
+                Just row -> valAt row (kw "script")
+
+listActions :: String -> String -> IO (Maybe Object)
+listActions clientAuthKey appAuthKey = do
+    ids <- requireAnyRole clientAuthKey appAuthKey
+    case ids of
+        Left _           -> return Nothing
+        Right (_, appId) -> do
+            result <- dbRunOp "list-actions.sql" [("app_id", asObject appId)]
+            return (Just result)
+
+uploadActions :: String -> String -> Object -> IO Object
+uploadActions clientAuthKey appAuthKey compressedActions = do
+    ids <- requireAnyRole clientAuthKey appAuthKey
+    case ids of
+        Left err         -> stdResult (Just err)
+        Right (_, appId) -> do
+            extracted <- invoke1 untarExtractFn compressedActions
+            case extracted of
+                Nothing      -> stdResult (Just "Actions could not be decompressed")
+                Just actions -> do
+                    listing  <- dbRunOp "list-actions.sql"
+                                    [("app_id", asObject appId)]
+                    deletion <- dbRunOp "delete-all-app-actions.sql"
+                                    [("app_id", asObject appId)]
+                    lc <- seqCount listing
+                    dc <- seqCount deletion
+                    if lc /= dc
+                        then stdResult (Just "Failed to delete actions")
+                        else do
+                            err <- uploadActionsLoop appId actions
+                            stdResult err
+
+--- Iterate over extracted actions map and upload each entry.
+uploadActionsLoop :: String -> Object -> IO (Maybe String)
+uploadActionsLoop appId actionsMap = loop actionsMap
+  where
+    loop remaining = do
+        s <- invokeNN1 cljSeqFn remaining
+        n <- seqCount s
+        if n == 0
+            then return Nothing
+            else do
+                entry     <- invokeNN1 cljFirstFn s
+                nameObj   <- invokeNN1 cljKeyFn entry
+                scriptObj <- invokeNN1 cljValFn entry
+                let name   = objStr nameObj
+                    script = objStr scriptObj
+                result <- dbRunOp "upload-action.sql"
+                            [ ("app_id", asObject appId)
+                            , ("name",   asObject name)
+                            , ("script", asObject script)
+                            ]
+                rc <- seqCount result
+                if rc == 0
+                    then return (Just "Failed to upload some actions")
+                    else do
+                        rest <- invokeNN1 cljRestFn s
+                        loop rest
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- § 10  Admin functions
+-- ─────────────────────────────────────────────────────────────────────────────
+
+--- Return the is_admin flag for the authenticated client, or Nothing if invalid.
+isClientAdmin :: String -> IO (Maybe String)
+isClientAdmin clientAuthKey = do
+    clientInfo <- decodeKey clientAuthKey
+    case clientInfo of
+        Nothing -> return Nothing
+        Just ci -> do
+            cid <- getField ci "client_id"
+            case cid of
+                Nothing       -> return Nothing
+                Just clientId -> do
+                    result <- dbRunOpFirst "is-client-admin.sql"
+                                [("client_id", asObject clientId)]
+                    case result of
+                        Nothing  -> return (Just "off")
+                        Just row -> getField row "is_admin"
+
+listAllThings :: String -> String -> IO Object
+listAllThings clientAuthKey things = do
+    adminStatus <- isClientAdmin clientAuthKey
+    case adminStatus of
+        Just "on" -> do
+            result <- dbRunOp ("list-all-" ++ things ++ ".sql") []
+            buildMap [("error", Nothing), (things, Just result)]
+        _ ->
+            buildMap [("error", Just (asObject "Not enough permissions")), (things, Nothing)]
+
+listAllClients :: String -> IO Object
+listAllClients key = listAllThings key "clients"
+
+listAllApps :: String -> IO Object
+listAllApps key = listAllThings key "apps"
+
+listAllFiles :: String -> IO Object
+listAllFiles key = listAllThings key "files"
+
+listAllAdmins :: String -> IO Object
+listAllAdmins key = listAllThings key "admins"
+
+promoteToAdmin :: String -> String -> IO Object
+promoteToAdmin clientAuthKey emailToPromote = do
+    adminStatus <- isClientAdmin clientAuthKey
+    case adminStatus of
+        Just "on" -> do
+            _ <- dbRunOpFirst "promote-to-admin.sql" [("email", asObject emailToPromote)]
+            stdResult Nothing
+        _ -> stdResult (Just "Not enough permissions")
+
+demoteAdmin :: String -> String -> IO Object
+demoteAdmin clientAuthKey emailToDemote = do
+    adminStatus <- isClientAdmin clientAuthKey
+    case adminStatus of
+        Just "on" -> do
+            _ <- dbRunOpFirst "demote-admin.sql" [("email", asObject emailToDemote)]
+            stdResult Nothing
+        _ -> stdResult (Just "Not enough permissions")
+
+checkAdmin :: String -> IO Object
+checkAdmin clientAuthKey = do
+    adminStatus <- isClientAdmin clientAuthKey
+    case adminStatus of
+        Just "on" -> stdResult Nothing
+        _         -> stdResult (Just "not admin")

@@ -117,10 +117,12 @@
   (undo-migrations))
 
 (defn run-operation [operation params]
-  (let [raw-sql (get sql-operations operation)
-        query (strint/strint raw-sql params)
-        result (execute-query query)]
-    result))
+  (try
+    (let [raw-sql (get sql-operations operation)
+          query (strint/strint raw-sql params)
+          result (execute-query query)]
+      result)
+    (catch org.sqlite.SQLiteException _ nil)))
 
 (defn setup-database []
   (run-operation "setup-database.sql" {}))
