@@ -373,7 +373,7 @@
 (defn- db-exec [query]
    (with-open [conn (jdbc/get-connection db/ds)]
      (jdbc/execute! conn ["PRAGMA foreign_keys = ON;"])
-      	(jdbc/execute! conn query {:builder-fn rs/as-unqualified-lower-maps})))
+     (jdbc/execute! conn [query] {:builder-fn rs/as-unqualified-lower-maps})))
 
 (defn db-count-clients []
    (-> "SELECT COUNT(*) AS count FROM clients" db-exec first :count))
