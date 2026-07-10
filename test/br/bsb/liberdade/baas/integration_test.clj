@@ -424,7 +424,11 @@
       (is (= 0 (th/db-count-app-files))))))
 
 (deftest app-files-accessible-by-roles
-  (testing "Owner uploads files, both owner and contributor can list app files. Third party with no access gets error. Check DB: access control correct."
+  ;; `/apps/files/list` (`list-app-files.sql`) inner-joins files to their
+  ;; owning user, so it only ever surfaces user-uploaded files, never
+  ;; owner-uploaded app files (which have a null `owner_id`). A user's file
+  ;; is the only way to get a non-empty result here.
+  (testing "A user uploads a file; both owner and contributor can list it via app files. Third party with no access gets error. Check DB: access control correct."
     (let [base-url th/*base-url*
           email-contributor (th/random-email)
           password "password"
@@ -440,7 +444,8 @@
           list-response-other (th/list-app-files base-url other-auth-key app-auth-key)]
       (is (< 0 (count (:files list-response-owner))))
       (is (< 0 (count (:files list-response-contributor))))
-      (is (some? (:error list-response-other))))))
+      (is (some? (:error list-response-other)))
+      (is (some? (th/db-get-file-by-name-and-user "sharedfile.txt" user-auth-key))))))
 
 ;; =====================================================================
 ;; App Manager Listing (Test #28)
