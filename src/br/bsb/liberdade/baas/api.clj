@@ -288,11 +288,10 @@
                                      action-param))))
 
 (defn- list-all-things [req f]
-  (-> req
-      :headers
-      (get "x-client-auth-key")
-      f
-      boilerplate-out))
+  (boilerplate-out req (-> req
+                            :headers
+                            (get "x-client-auth-key")
+                            f)))
 
 (defn list-all-clients [req]
   (list-all-things req biz/list-all-clients))
