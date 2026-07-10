@@ -7,16 +7,6 @@ default: build
 test:
 	lein test
 
-.PHONY: integration-test
-integration-test:
-	lein run migrate-up
-	lein run up &
-	cd integration
-	bb network_test.clj
-	cd ..
-	# fuser -k $(API_PORT)/tcp
-	lsof -i tcp:$(API_PORT) | grep -v PID | awk '{print $$2}' | xargs kill
-
 .PHONY: build
 build: test
 	lein uberjar

@@ -59,7 +59,7 @@
             next-state (assoc state :app-id app-id)]
         next-state)
       (catch org.sqlite.SQLiteException e
-        {:error e}))))
+        (assoc state :error "App name already exists for this owner")))))
 
 (defn- invite-to-app-xf [state]
   (if (some? (:error state))
