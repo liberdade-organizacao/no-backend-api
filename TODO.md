@@ -21,10 +21,10 @@ To maintain a clear separation of concerns and make the implementation manageabl
 - [x] Document these requirements clearly to serve as the "source of truth" for the validation implementation.
 
 ### Step 3: Implement Validation for Individual Handlers
-- [ ] For each handler in `src/br/bsb/liberdade/baas/api.clj`:
-    - [ ] Identify where the payload is extracted (e.g., `boilerplate-in`).
-    - [ ] Insert a call to the validation utility immediately after extraction.
-    - [ ] If validation fails, use `boilerplate-out` to return a `400 Bad Request` with a descriptive error message.
+- [x] For each handler in `src/br/bsb/liberdade/baas/api.clj`:
+    - [x] Identify where the payload is extracted (e.g., `boilerplate-in`).
+    - [x] Insert a call to the validation utility immediately after extraction.
+    - [x] If validation fails, use `boilerplate-out` to return a `400 Bad Request` with a descriptive error message.
 
 ### Step 4: Implement Header and Query Param Validation
 - [ ] Extend the validation utility or create new validators specifically for `req` headers and `query-string` parameters.
