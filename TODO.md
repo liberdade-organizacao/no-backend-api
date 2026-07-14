@@ -27,8 +27,8 @@ To maintain a clear separation of concerns and make the implementation manageabl
     - [x] If validation fails, use `boilerplate-out` to return a `400 Bad Request` with a descriptive error message.
 
 ### Step 4: Implement Header and Query Param Validation
-- [ ] Extend the validation utility or create new validators specifically for `req` headers and `query-string` parameters.
-- [ ] Apply these validators to the relevant handlers (e.g., `list-apps`, `upload-user-file`).
+- [x] Extend the validation utility or create new validators specifically for `req` headers and `query-string` parameters.
+- [x] Apply these validators to the relevant handlers (e.g., `list-apps`, `upload-user-file`).
 
 ### Step 5: Verification and Testing
 - [ ] Create or update tests in `test/br/bsb/liberdade/baas/api_test.clj` to include:

@@ -18,24 +18,24 @@
       "must be a valid email address")))
 
 (defn validate [schema params]
-   (let [errors (reduce
-                  (fn [acc [key validator-fn]]
-                    (let [value (get params key)
-                         error (validator-fn value)]
-                      (if error
-                        (assoc acc key error)
-                       acc)))
-                  {}
-                 schema)]
-      (if (empty? errors)
-       params
-        {:error "Validation Failed"
-         :details errors})))
+  (let [errors (reduce
+                (fn [acc [key validator-fn]]
+                  (let [value (get params key)
+                        error (validator-fn value)]
+                    (if error
+                      (assoc acc key error)
+                      acc)))
+                {}
+                schema)]
+    (if (empty? errors)
+      params
+      {:error "Validation Failed"
+       :details errors})))
 
 (defn validate-headers [req schema]
-    (let [headers (reduce (fn [acc h] (assoc acc h (-> req :headers (get h)))) {} (keys schema))]
-      (validate schema headers)))
+  (let [headers (reduce (fn [acc h] (assoc acc h (-> req :headers (get h)))) {} (keys schema))]
+    (validate schema headers)))
 
 (defn validate-query [req schema parse-fn]
-    (let [params ((or parse-fn identity) (:query-string req))]
-      (validate schema params)))
+  (let [params ((or parse-fn identity) (:query-string req))]
+    (validate schema params)))

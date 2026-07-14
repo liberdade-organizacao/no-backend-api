@@ -38,7 +38,7 @@
 
 (deftest measurability
   (testing "encoded data can be measured"
-    (let [data "abcdefghij" 
+    (let [data "abcdefghij"
           encoded (utils/encode-data data)
           length (count encoded)]
       (is (= 16 length)))))
