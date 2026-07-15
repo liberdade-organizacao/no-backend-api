@@ -29,8 +29,8 @@
   (testing "clients-signup passes valid payload through to biz/new-client"
     (let [req (mock-json-req {"email" "test@example.com" "password" "password123"})]
       (try
-        (api/clients-signup req)
-        (is false "should have thrown or returned a response")
+        (let [resp (api/clients-signup req)]
+          (is (not= 400 (:status resp)) "should not be rejected by validation"))
         (catch Exception _
           (is true))))))
 
@@ -38,8 +38,8 @@
   (testing "create-app passes valid payload through to biz/new-app"
     (let [req (mock-json-req {"auth_key" "key123" "app_name" "myapp"})]
       (try
-        (api/create-app req)
-        (is false "should have thrown or returned a response")
+        (let [resp (api/create-app req)]
+          (is (not= 400 (:status resp)) "should not be rejected by validation"))
         (catch Exception _
           (is true))))))
 
@@ -78,7 +78,7 @@
           resp (api/clients-signup req)]
       (is (= 400 (:status resp)))
       (let [parsed (json/read-str (:body resp) :key-fn keyword)]
-        (is (= {:error "Validation Failed"} parsed))
+        (is (= "Validation Failed" (:error parsed)))
         (is (= "is required" (get-in parsed [:details :email])))
         (is (= "is required" (get-in parsed [:details :password])))))))
 
@@ -88,7 +88,7 @@
           resp (api/create-app req)]
       (is (= 400 (:status resp)))
       (let [parsed (json/read-str (:body resp) :key-fn keyword)]
-        (is (= {:error "Validation Failed"} parsed))
+        (is (= "Validation Failed" (:error parsed)))
         (is (= "is required" (get-in parsed [:details :auth_key])))
         (is (= "is required" (get-in parsed [:details :app_name])))))))
 
@@ -98,7 +98,7 @@
           resp (api/delete-app req)]
       (is (= 400 (:status resp)))
       (let [parsed (json/read-str (:body resp) :key-fn keyword)]
-        (is (= {:error "Validation Failed"} parsed))
+        (is (= "Validation Failed" (:error parsed)))
         (is (= "is required" (get-in parsed [:details :client_auth_key])))
         (is (= "is required" (get-in parsed [:details :app_auth_key])))))))
 
@@ -112,7 +112,7 @@
           resp (api/clients-signup req)]
       (is (= 400 (:status resp)))
       (let [parsed (json/read-str (:body resp) :key-fn keyword)]
-        (is (= {:error "Validation Failed"} parsed))
+        (is (= "Validation Failed" (:error parsed)))
         (is (= "must be a string" (get-in parsed [:details :password])))))))
 
 (deftest create-app-wrong-type-auth-key
@@ -121,7 +121,7 @@
           resp (api/create-app req)]
       (is (= 400 (:status resp)))
       (let [parsed (json/read-str (:body resp) :key-fn keyword)]
-        (is (= {:error "Validation Failed"} parsed))
+        (is (= "Validation Failed" (:error parsed)))
         (is (= "must be a string" (get-in parsed [:details :auth_key])))))))
 
 ;;;;;;;;;;;;;;;;;;;
@@ -161,8 +161,8 @@
           resp (api/upload-user-file req)]
       (is (= 400 (:status resp)))
       (let [parsed (json/read-str (:body resp) :key-fn keyword)]
-        (is (= {:error "Validation Failed"} parsed))
-        (is (= "is required" (get-in parsed [:details :x_user_auth_key])))))))
+        (is (= "Validation Failed" (:error parsed)))
+        (is (= "is required" (get-in parsed [:details :x-user-auth-key])))))))
 
 (deftest download-user-file-missing-headers
   (testing "download-user-file returns 400 when required headers are missing"
@@ -170,9 +170,9 @@
           resp (api/download-user-file req)]
       (is (= 400 (:status resp)))
       (let [parsed (json/read-str (:body resp) :key-fn keyword)]
-        (is (= {:error "Validation Failed"} parsed))
-        (is (= "is required" (get-in parsed [:details :x_user_auth_key])))
-        (is (= "is required" (get-in parsed [:details :x_filename])))))))
+        (is (= "Validation Failed" (:error parsed)))
+        (is (= "is required" (get-in parsed [:details :x-user-auth-key])))
+        (is (= "is required" (get-in parsed [:details :x-filename])))))))
 
 (deftest list-user-files-missing-headers
   (testing "list-user-files returns 400 when x-user-auth-key is missing"
@@ -180,8 +180,8 @@
           resp (api/list-user-files req)]
       (is (= 400 (:status resp)))
       (let [parsed (json/read-str (:body resp) :key-fn keyword)]
-        (is (= {:error "Validation Failed"} parsed))
-        (is (= "is required" (get-in parsed [:details :x_user_auth_key])))))))
+        (is (= "Validation Failed" (:error parsed)))
+        (is (= "is required" (get-in parsed [:details :x-user-auth-key])))))))
 
 (deftest delete-user-file-missing-headers
   (testing "delete-user-file returns 400 when required headers are missing"
@@ -189,9 +189,9 @@
           resp (api/delete-user-file req)]
       (is (= 400 (:status resp)))
       (let [parsed (json/read-str (:body resp) :key-fn keyword)]
-        (is (= {:error "Validation Failed"} parsed))
-        (is (= "is required" (get-in parsed [:details :x_user_auth_key])))
-        (is (= "is required" (get-in parsed [:details :x_filename])))))))
+        (is (= "Validation Failed" (:error parsed)))
+        (is (= "is required" (get-in parsed [:details :x-user-auth-key])))
+        (is (= "is required" (get-in parsed [:details :x-filename])))))))
 
 (deftest upload-app-file-missing-headers
   (testing "upload-app-file returns 400 when required headers are missing"
@@ -199,10 +199,10 @@
           resp (api/upload-app-file req)]
       (is (= 400 (:status resp)))
       (let [parsed (json/read-str (:body resp) :key-fn keyword)]
-        (is (= {:error "Validation Failed"} parsed))
-        (is (= "is required" (get-in parsed [:details :x_client_auth_key])))
-        (is (= "is required" (get-in parsed [:details :x_app_auth_key])))
-        (is (= "is required" (get-in parsed [:details :x_filename])))))))
+        (is (= "Validation Failed" (:error parsed)))
+        (is (= "is required" (get-in parsed [:details :x-client-auth-key])))
+        (is (= "is required" (get-in parsed [:details :x-app-auth-key])))
+        (is (= "is required" (get-in parsed [:details :x-filename])))))))
 
 (deftest download-app-file-missing-headers
   (testing "download-app-file returns 400 when required headers are missing"
@@ -210,10 +210,10 @@
           resp (api/download-app-file req)]
       (is (= 400 (:status resp)))
       (let [parsed (json/read-str (:body resp) :key-fn keyword)]
-        (is (= {:error "Validation Failed"} parsed))
-        (is (= "is required" (get-in parsed [:details :x_client_auth_key])))
-        (is (= "is required" (get-in parsed [:details :x_app_auth_key])))
-        (is (= "is required" (get-in parsed [:details :x_filename])))))))
+        (is (= "Validation Failed" (:error parsed)))
+        (is (= "is required" (get-in parsed [:details :x-client-auth-key])))
+        (is (= "is required" (get-in parsed [:details :x-app-auth-key])))
+        (is (= "is required" (get-in parsed [:details :x-filename])))))))
 
 (deftest delete-app-file-missing-headers
   (testing "delete-app-file returns 400 when required headers are missing"
@@ -221,10 +221,10 @@
           resp (api/delete-app-file req)]
       (is (= 400 (:status resp)))
       (let [parsed (json/read-str (:body resp) :key-fn keyword)]
-        (is (= {:error "Validation Failed"} parsed))
-        (is (= "is required" (get-in parsed [:details :x_client_auth_key])))
-        (is (= "is required" (get-in parsed [:details :x_app_auth_key])))
-        (is (= "is required" (get-in parsed [:details :x_filename])))))))
+        (is (= "Validation Failed" (:error parsed)))
+        (is (= "is required" (get-in parsed [:details :x-client-auth-key])))
+        (is (= "is required" (get-in parsed [:details :x-app-auth-key])))
+        (is (= "is required" (get-in parsed [:details :x-filename])))))))
 
 ;;;;;;;;;;;;;;;;;;;
 ; Query Param Validation - Positive Cases
@@ -243,8 +243,8 @@
   (testing "list-app-users passes valid query params through to biz/list-app-users"
     (let [req (mock-json-req {} :query-string "client_auth_key=key1&app_auth_key=key2")]
       (try
-        (api/list-app-users req)
-        (is false "should have thrown or returned a response")
+        (let [resp (api/list-app-users req)]
+          (is (not= 400 (:status resp)) "should not be rejected by validation"))
         (catch Exception _
           (is true))))))
 
@@ -258,7 +258,7 @@
           resp (api/list-apps req)]
       (is (= 400 (:status resp)))
       (let [parsed (json/read-str (:body resp) :key-fn keyword)]
-        (is (= {:error "Validation Failed"} parsed))
+        (is (= "Validation Failed" (:error parsed)))
         (is (= "is required" (get-in parsed [:details :auth_key])))))))
 
 (deftest list-app-users-missing-query-params
@@ -267,7 +267,7 @@
           resp (api/list-app-users req)]
       (is (= 400 (:status resp)))
       (let [parsed (json/read-str (:body resp) :key-fn keyword)]
-        (is (= {:error "Validation Failed"} parsed))
+        (is (= "Validation Failed" (:error parsed)))
         (is (= "is required" (get-in parsed [:details :client_auth_key])))
         (is (= "is required" (get-in parsed [:details :app_auth_key])))))))
 
@@ -277,7 +277,7 @@
           resp (api/list-app-files req)]
       (is (= 400 (:status resp)))
       (let [parsed (json/read-str (:body resp) :key-fn keyword)]
-        (is (= {:error "Validation Failed"} parsed))
+        (is (= "Validation Failed" (:error parsed)))
         (is (= "is required" (get-in parsed [:details :client_auth_key])))
         (is (= "is required" (get-in parsed [:details :app_auth_key])))))))
 
@@ -287,7 +287,7 @@
           resp (api/list-actions req)]
       (is (= 400 (:status resp)))
       (let [parsed (json/read-str (:body resp) :key-fn keyword)]
-        (is (= {:error "Validation Failed"} parsed))
+        (is (= "Validation Failed" (:error parsed)))
         (is (= "is required" (get-in parsed [:details :client_auth_key])))
         (is (= "is required" (get-in parsed [:details :app_auth_key])))))))
 
@@ -301,8 +301,8 @@
           resp (api/list-all-clients req)]
       (is (= 400 (:status resp)))
       (let [parsed (json/read-str (:body resp) :key-fn keyword)]
-        (is (= {:error "Validation Failed"} parsed))
-        (is (= "is required" (get-in parsed [:details :x_client_auth_key])))))))
+        (is (= "Validation Failed" (:error parsed)))
+        (is (= "is required" (get-in parsed [:details :x-client-auth-key])))))))
 
 (deftest list-all-clients-valid-header
   (testing "list-all-clients passes valid header through to biz/list-all-clients"
@@ -325,7 +325,7 @@
           resp (api/invite-to-app req)]
       (is (= 400 (:status resp)))
       (let [parsed (json/read-str (:body resp) :key-fn keyword)]
-        (is (= {:error "Validation Failed"} parsed))
+        (is (= "Validation Failed" (:error parsed)))
         (is (= "is required" (get-in parsed [:details :inviter_auth_key])))
         (is (= "is required" (get-in parsed [:details :app_auth_key])))
         (is (= "is required" (get-in parsed [:details :invitee_email])))))))
@@ -338,7 +338,7 @@
           resp (api/invite-to-app req)]
       (is (= 400 (:status resp)))
       (let [parsed (json/read-str (:body resp) :key-fn keyword)]
-        (is (= {:error "Validation Failed"} parsed))
+        (is (= "Validation Failed" (:error parsed)))
         (is (= "must be a valid email address"
                (get-in parsed [:details :invitee_email])))))))
 
@@ -348,7 +348,7 @@
           resp (api/users-login req)]
       (is (= 400 (:status resp)))
       (let [parsed (json/read-str (:body resp) :key-fn keyword)]
-        (is (= {:error "Validation Failed"} parsed))
+        (is (= "Validation Failed" (:error parsed)))
         (is (= "is required" (get-in parsed [:details :app_auth_key])))
         (is (= "is required" (get-in parsed [:details :email])))
         (is (= "is required" (get-in parsed [:details :password])))))))
@@ -359,7 +359,7 @@
           resp (api/delete-user req)]
       (is (= 400 (:status resp)))
       (let [parsed (json/read-str (:body resp) :key-fn keyword)]
-        (is (= {:error "Validation Failed"} parsed))
+        (is (= "Validation Failed" (:error parsed)))
         (is (= "is required" (get-in parsed [:details :user_auth_key])))
         (is (= "is required" (get-in parsed [:details :password])))))))
 
@@ -369,7 +369,7 @@
           resp (api/update-client-password req)]
       (is (= 400 (:status resp)))
       (let [parsed (json/read-str (:body resp) :key-fn keyword)]
-        (is (= {:error "Validation Failed"} parsed))
+        (is (= "Validation Failed" (:error parsed)))
         (is (= "is required" (get-in parsed [:details :auth_key])))
         (is (= "is required" (get-in parsed [:details :old_password])))
         (is (= "is required" (get-in parsed [:details :new_password])))))))
@@ -380,7 +380,7 @@
           resp (api/update-user-password req)]
       (is (= 400 (:status resp)))
       (let [parsed (json/read-str (:body resp) :key-fn keyword)]
-        (is (= {:error "Validation Failed"} parsed))
+        (is (= "Validation Failed" (:error parsed)))
         (is (= "is required" (get-in parsed [:details :user_auth_key])))
         (is (= "is required" (get-in parsed [:details :old_password])))
         (is (= "is required" (get-in parsed [:details :new_password])))))))
@@ -391,7 +391,7 @@
           resp (api/delete-client req)]
       (is (= 400 (:status resp)))
       (let [parsed (json/read-str (:body resp) :key-fn keyword)]
-        (is (= {:error "Validation Failed"} parsed))
+        (is (= "Validation Failed" (:error parsed)))
         (is (= "is required" (get-in parsed [:details :auth_key])))
         (is (= "is required" (get-in parsed [:details :password])))))))
 
@@ -401,7 +401,7 @@
           resp (api/upload-action req)]
       (is (= 400 (:status resp)))
       (let [parsed (json/read-str (:body resp) :key-fn keyword)]
-        (is (= {:error "Validation Failed"} parsed))
+        (is (= "Validation Failed" (:error parsed)))
         (is (= "is required" (get-in parsed [:details :client_auth_key])))
         (is (= "is required" (get-in parsed [:details :app_auth_key])))
         (is (= "is required" (get-in parsed [:details :action_name])))
@@ -413,7 +413,7 @@
           resp (api/update-action req)]
       (is (= 400 (:status resp)))
       (let [parsed (json/read-str (:body resp) :key-fn keyword)]
-        (is (= {:error "Validation Failed"} parsed))
+        (is (= "Validation Failed" (:error parsed)))
         (is (= "is required" (get-in parsed [:details :client_auth_key])))
         (is (= "is required" (get-in parsed [:details :app_auth_key])))
         (is (= "is required" (get-in parsed [:details :old_action_name])))
@@ -426,7 +426,7 @@
           resp (api/delete-action req)]
       (is (= 400 (:status resp)))
       (let [parsed (json/read-str (:body resp) :key-fn keyword)]
-        (is (= {:error "Validation Failed"} parsed))
+        (is (= "Validation Failed" (:error parsed)))
         (is (= "is required" (get-in parsed [:details :client_auth_key])))
         (is (= "is required" (get-in parsed [:details :app_auth_key])))
         (is (= "is required" (get-in parsed [:details :action_name])))))))
@@ -437,7 +437,7 @@
           resp (api/run-action req)]
       (is (= 400 (:status resp)))
       (let [parsed (json/read-str (:body resp) :key-fn keyword)]
-        (is (= {:error "Validation Failed"} parsed))
+        (is (= "Validation Failed" (:error parsed)))
         (is (= "is required" (get-in parsed [:details :user_auth_key])))
         (is (= "is required" (get-in parsed [:details :app_auth_key])))
         (is (= "is required" (get-in parsed [:details :action_name])))
@@ -449,7 +449,7 @@
           resp (api/download-action req)]
       (is (= 400 (:status resp)))
       (let [parsed (json/read-str (:body resp) :key-fn keyword)]
-        (is (= {:error "Validation Failed"} parsed))
+        (is (= "Validation Failed" (:error parsed)))
         (is (= "is required" (get-in parsed [:details :client_auth_key])))
         (is (= "is required" (get-in parsed [:details :app_auth_key])))
         (is (= "is required" (get-in parsed [:details :action_name])))))))
@@ -460,7 +460,7 @@
           resp (api/list-app-managers req)]
       (is (= 400 (:status resp)))
       (let [parsed (json/read-str (:body resp) :key-fn keyword)]
-        (is (= {:error "Validation Failed"} parsed))
+        (is (= "Validation Failed" (:error parsed)))
         (is (= "is required" (get-in parsed [:details :client_auth_key])))
         (is (= "is required" (get-in parsed [:details :app_auth_key])))))))
 
@@ -470,7 +470,7 @@
           resp (api/promote-to-admin req)]
       (is (= 400 (:status resp)))
       (let [parsed (json/read-str (:body resp) :key-fn keyword)]
-        (is (= {:error "Validation Failed"} parsed))
+        (is (= "Validation Failed" (:error parsed)))
         (is (= "is required" (get-in parsed [:details :auth_key])))
         (is (= "is required" (get-in parsed [:details :email])))))))
 
@@ -480,7 +480,7 @@
           resp (api/demote-admin req)]
       (is (= 400 (:status resp)))
       (let [parsed (json/read-str (:body resp) :key-fn keyword)]
-        (is (= {:error "Validation Failed"} parsed))
+        (is (= "Validation Failed" (:error parsed)))
         (is (= "is required" (get-in parsed [:details :auth_key])))
         (is (= "is required" (get-in parsed [:details :email])))))))
 
@@ -490,7 +490,7 @@
           resp (api/revoke-from-app req)]
       (is (= 400 (:status resp)))
       (let [parsed (json/read-str (:body resp) :key-fn keyword)]
-        (is (= {:error "Validation Failed"} parsed))
+        (is (= "Validation Failed" (:error parsed)))
         (is (= "is required" (get-in parsed [:details :revoker_auth_key])))
         (is (= "is required" (get-in parsed [:details :app_auth_key])))
         (is (= "is required" (get-in parsed [:details :revokee_email])))))))
@@ -501,7 +501,7 @@
           resp (api/revoke-app-manager req)]
       (is (= 400 (:status resp)))
       (let [parsed (json/read-str (:body resp) :key-fn keyword)]
-        (is (= {:error "Validation Failed"} parsed))
+        (is (= "Validation Failed" (:error parsed)))
         (is (= "is required" (get-in parsed [:details :client_auth_key])))
         (is (= "is required" (get-in parsed [:details :app_auth_key])))
         (is (= "is required" (get-in parsed [:details :email_to_revoke])))))))
@@ -512,9 +512,9 @@
           resp (api/upload-actions req)]
       (is (= 400 (:status resp)))
       (let [parsed (json/read-str (:body resp) :key-fn keyword)]
-        (is (= {:error "Validation Failed"} parsed))
-        (is (= "is required" (get-in parsed [:details :x_client_auth_key])))
-        (is (= "is required" (get-in parsed [:details :x_app_auth_key])))))))
+        (is (= "Validation Failed" (:error parsed)))
+        (is (= "is required" (get-in parsed [:details :x-client-auth-key])))
+        (is (= "is required" (get-in parsed [:details :x-app-auth-key])))))))
 
 (deftest list-all-admins-missing-header
   (testing "list-all-admins returns 400 when x-client-auth-key is missing"
@@ -522,8 +522,8 @@
           resp (api/list-all-admins req)]
       (is (= 400 (:status resp)))
       (let [parsed (json/read-str (:body resp) :key-fn keyword)]
-        (is (= {:error "Validation Failed"} parsed))
-        (is (= "is required" (get-in parsed [:details :x_client_auth_key])))))))
+        (is (= "Validation Failed" (:error parsed)))
+        (is (= "is required" (get-in parsed [:details :x-client-auth-key])))))))
 
 (deftest check-admin-missing-header
   (testing "check-admin returns 400 when x-client-auth-key is missing"
@@ -531,6 +531,6 @@
           resp (api/check-admin req)]
       (is (= 400 (:status resp)))
       (let [parsed (json/read-str (:body resp) :key-fn keyword)]
-        (is (= {:error "Validation Failed"} parsed))
-        (is (= "is required" (get-in parsed [:details :x_client_auth_key])))))))
+        (is (= "Validation Failed" (:error parsed)))
+        (is (= "is required" (get-in parsed [:details :x-client-auth-key])))))))
 
