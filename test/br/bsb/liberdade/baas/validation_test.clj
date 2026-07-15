@@ -15,6 +15,16 @@
   (is (= "must be a valid email address" (v/validate-email "not-an-email")))
   (is (= "must be a valid email address" (v/validate-email 123))))
 
+(deftest required-string-test
+  (is (nil? (v/required-string "hello")))
+  (is (= "is required" (v/required-string nil)))
+  (is (= "must be a string" (v/required-string 123))))
+
+(deftest required-email-test
+  (is (nil? (v/required-email "test@example.com")))
+  (is (= "is required" (v/required-email nil)))
+  (is (= "must be a valid email address" (v/required-email "not-an-email"))))
+
 (deftest validate-test
   (let [schema {"email" v/validate-email
                 "password" v/validate-string}]

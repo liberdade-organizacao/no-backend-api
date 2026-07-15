@@ -17,6 +17,12 @@
       nil
       "must be a valid email address")))
 
+(defn required-string [value]
+  (or (validate-presence value) (validate-string value)))
+
+(defn required-email [value]
+  (or (validate-presence value) (validate-email value)))
+
 (defn validate [schema params]
   (let [errors (reduce
                 (fn [acc [key validator-fn]]
@@ -33,8 +39,7 @@
        :details errors})))
 
 (defn validate-headers [req schema]
-  (let [headers (reduce (fn [acc h] (assoc acc h (-> req :headers (get h)))) {} (keys schema))]
-    (validate schema headers)))
+  (validate schema (select-keys (:headers req) (keys schema))))
 
 (defn validate-query [req schema parse-fn]
   (let [params ((or parse-fn identity) (:query-string req))]
