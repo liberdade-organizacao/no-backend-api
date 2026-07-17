@@ -7,6 +7,7 @@ db/
 *.log
 *.sqlite
 *.tar.gz
+*.swp
 
 ###########
 # CLOJURE #

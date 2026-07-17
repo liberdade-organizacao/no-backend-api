@@ -2,7 +2,7 @@
   (:require [clojure.test :refer :all]
             [br.bsb.liberdade.baas.fs :as fs]))
 
-(deftest file-crud 
+(deftest file-crud
   (testing "can create, read, update, and delete a file"
     (let [filename "test_file.txt"
           _ (fs/delete-file filename)

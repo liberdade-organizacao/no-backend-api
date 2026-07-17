@@ -110,10 +110,10 @@
 
 (defn- request-json [method base-url path params]
   (json-response (http/request {:method method
-                                 :url (str base-url path)
-                                 :body (json/write-str params)
-                                 :as :json
-                                 :throw-exceptions false})))
+                                :url (str base-url path)
+                                :body (json/write-str params)
+                                :as :json
+                                :throw-exceptions false})))
 
 (defn- get-json [base-url path query-params]
   (json-response (http/get (str base-url path)
@@ -129,10 +129,10 @@
 
 (defn- delete-json-headers [base-url path headers]
   (json-response (http/request {:method :delete
-                                 :url (str base-url path)
-                                 :headers headers
-                                 :as :json
-                                 :throw-exceptions false})))
+                                :url (str base-url path)
+                                :headers headers
+                                :as :json
+                                :throw-exceptions false})))
 
 (defn- get-raw-headers [base-url path headers]
   (raw-response-or-nil (http/get (str base-url path)

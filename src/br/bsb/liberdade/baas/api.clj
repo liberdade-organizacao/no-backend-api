@@ -11,7 +11,8 @@
             [br.bsb.liberdade.baas.business :as biz]
             [br.bsb.liberdade.baas.proxies :as proxies]
             [br.bsb.liberdade.baas.tar.decompress :as untar]
-            [br.bsb.liberdade.baas.jobs :as jobs]))
+            [br.bsb.liberdade.baas.jobs :as jobs]
+            [br.bsb.liberdade.baas.validation :as v]))
 
 ; #############
 ; # UTILITIES #
@@ -25,7 +26,7 @@
   (let [msgpack? (= "application/vnd.msgpack"
                     (-> req :headers (get "accept")))]
     {:status (if (-> body (get :error) nil?) 200 400)
-     :headers {"Content-Type" (if msgpack? 
+     :headers {"Content-Type" (if msgpack?
                                 "application/vnd.msgpack"
                                 "text/json")
                "Access-Control-Allow-Origin" "*"
@@ -39,259 +40,352 @@
        (map #(string/split % #"="))
        (reduce (fn [state [key value]] (assoc state key value)) {})))
 
+(defn- parse-body [req]
+  (boilerplate-in req (slurp (:body req))))
+
+(defn- respond
+  "Runs `on-valid` with the validated params, or returns the validation
+  error response if `validated` failed schema validation."
+  [req validated on-valid]
+  (if (contains? validated :error)
+    (boilerplate-out req validated)
+    (on-valid validated)))
+
 ; ##########
 ; # ROUTES #
 ; ##########
 (defn check-health [req]
-  (boilerplate-out req 
-               {"api" "ok"
-                "db" (db/check-health)
-                "scripting" (proxies/check-scripting-engine-health)
-                "version" "0.3.1"}))
+  (boilerplate-out req
+                   {"api" "ok"
+                    "db" (db/check-health)
+                    "scripting" (proxies/check-scripting-engine-health)
+                    "version" "0.3.1"}))
 
 (defn clients-signup [req]
-  (let [params (boilerplate-in req (slurp (:body req)))
-        email (get params "email")
-        password (get params "password")]
-    (boilerplate-out req (biz/new-client email password false))))
+  (respond req
+           (v/validate {"email" v/required-email
+                        "password" v/required-string}
+                       (parse-body req))
+           (fn [{email "email" password "password"}]
+             (boilerplate-out req (biz/new-client email password false)))))
 
 (defn clients-login [req]
-  (let [params (boilerplate-in req (slurp (:body req)))
-        email (get params "email")
-        password (get params "password")]
-    (boilerplate-out req (biz/auth-client email password))))
+  (respond req
+           (v/validate {"email" v/required-email
+                        "password" v/required-string}
+                       (parse-body req))
+           (fn [{email "email" password "password"}]
+             (boilerplate-out req (biz/auth-client email password)))))
 
 (defn create-app [req]
-  (let [params (boilerplate-in req (slurp (:body req)))
-        auth-key (get params "auth_key")
-        app-name (get params "app_name")]
-    (boilerplate-out req (biz/new-app auth-key app-name))))
+  (respond req
+           (v/validate {"auth_key" v/required-string
+                        "app_name" v/required-string}
+                       (parse-body req))
+           (fn [{auth-key "auth_key" app-name "app_name"}]
+             (boilerplate-out req (biz/new-app auth-key app-name)))))
 
 (defn list-apps [req]
-  (let [query-string (:query-string req)
-        search-params (url-search-params query-string)
-        auth-key (get search-params "auth_key")]
-    (boilerplate-out req (biz/get-clients-apps auth-key))))
+  (respond req
+           (v/validate-query req {"auth_key" v/required-string} url-search-params)
+           (fn [{auth-key "auth_key"}]
+             (boilerplate-out req (biz/get-clients-apps auth-key)))))
 
 (defn delete-app [req]
-  (let [params (boilerplate-in req (slurp (:body req)))
-        client-auth-key (get params "client_auth_key")
-        app-auth-key (get params "app_auth_key")]
-    (boilerplate-out req (biz/delete-app client-auth-key app-auth-key))))
+  (respond req
+           (v/validate {"client_auth_key" v/required-string
+                        "app_auth_key" v/required-string}
+                       (parse-body req))
+           (fn [{client-auth-key "client_auth_key" app-auth-key "app_auth_key"}]
+             (boilerplate-out req (biz/delete-app client-auth-key app-auth-key)))))
 
 (defn invite-to-app [req]
-  (let [params (->> req :body slurp (boilerplate-in req))
-        inviter-auth-key (get params "inviter_auth_key" nil)
-        app-auth-key (get params "app_auth_key" nil)
-        invitee-email (get params  "invitee_email" nil)
-        invitee-role (get params "invitee_role" "contributor")]
-    (boilerplate-out req
-                 (biz/invite-to-app-by-email inviter-auth-key
-                                             app-auth-key
-                                             invitee-email
-                                             invitee-role))))
+  (respond req
+           (v/validate {"inviter_auth_key" v/required-string
+                        "app_auth_key" v/required-string
+                        "invitee_email" v/required-email}
+                       (parse-body req))
+           (fn [{inviter-auth-key "inviter_auth_key"
+                 app-auth-key "app_auth_key"
+                 invitee-email "invitee_email"
+                 :as validated}]
+             (boilerplate-out req
+                              (biz/invite-to-app-by-email inviter-auth-key
+                                                          app-auth-key
+                                                          invitee-email
+                                                          (get validated "invitee_role" "contributor"))))))
 
 (defn revoke-from-app [req]
-  (let [params (->> req :body slurp (boilerplate-in req))
-        revoker-auth-key (get params "revoker_auth_key" nil)
-        app-auth-key (get params "app_auth_key" nil)
-        revokee-email (get params  "revokee_email" nil)]
-    (boilerplate-out req
-                 (biz/revoke-from-app-by-email revoker-auth-key
-                                               app-auth-key
-                                               revokee-email))))
+  (respond req
+           (v/validate {"revoker_auth_key" v/required-string
+                        "app_auth_key" v/required-string
+                        "revokee_email" v/required-email}
+                       (parse-body req))
+           (fn [{revoker-auth-key "revoker_auth_key"
+                 app-auth-key "app_auth_key"
+                 revokee-email "revokee_email"}]
+             (boilerplate-out req
+                              (biz/revoke-from-app-by-email revoker-auth-key
+                                                            app-auth-key
+                                                            revokee-email)))))
 
 (defn update-client-password [req]
-  (let [params (->> req :body slurp (boilerplate-in req))
-        client-auth-key (get params "auth_key" nil)
-        old-password (get params "old_password" nil)
-        new-password (get params "new_password" nil)]
-    (boilerplate-out req
-                 (biz/change-client-password client-auth-key
-                                             old-password
-                                             new-password))))
+  (respond req
+           (v/validate {"auth_key" v/required-string
+                        "old_password" v/required-string
+                        "new_password" v/required-string}
+                       (parse-body req))
+           (fn [{client-auth-key "auth_key"
+                 old-password "old_password"
+                 new-password "new_password"}]
+             (boilerplate-out req
+                              (biz/change-client-password client-auth-key
+                                                          old-password
+                                                          new-password)))))
+
 (defn delete-client [req]
-  (let [params (->> req :body slurp (boilerplate-in req))
-        auth-key (get params "auth_key" nil)
-        password (get params "password" nil)]
-    (boilerplate-out req (biz/delete-client auth-key password))))
+  (respond req
+           (v/validate {"auth_key" v/required-string
+                        "password" v/required-string}
+                       (parse-body req))
+           (fn [{auth-key "auth_key" password "password"}]
+             (boilerplate-out req (biz/delete-client auth-key password)))))
 
 (defn users-signup [req]
-  (let [params (->> req :body slurp (boilerplate-in req))
-        app-auth-key (get params "app_auth_key" nil)
-        email (get params "email" nil)
-        password (get params "password" nil)]
-    (boilerplate-out req (biz/new-user app-auth-key email password))))
+  (respond req
+           (v/validate {"app_auth_key" v/required-string
+                        "email" v/required-email
+                        "password" v/required-string}
+                       (parse-body req))
+           (fn [{app-auth-key "app_auth_key" email "email" password "password"}]
+             (boilerplate-out req (biz/new-user app-auth-key email password)))))
 
 (defn users-login [req]
-  (let [params (->> req :body slurp (boilerplate-in req))
-        app-auth-key (get params "app_auth_key" nil)
-        email (get params "email" nil)
-        password (get params "password" nil)]
-    (boilerplate-out req (biz/auth-user app-auth-key email password))))
+  (respond req
+           (v/validate {"app_auth_key" v/required-string
+                        "email" v/required-email
+                        "password" v/required-string}
+                       (parse-body req))
+           (fn [{app-auth-key "app_auth_key" email "email" password "password"}]
+             (boilerplate-out req (biz/auth-user app-auth-key email password)))))
 
 (defn delete-user [req]
-  (let [params (->> req :body slurp (boilerplate-in req))
-        user-auth-key (get params "user_auth_key" nil)
-        password (get params "password" nil)]
-    (boilerplate-out req (biz/delete-user user-auth-key password))))
+  (respond req
+           (v/validate {"user_auth_key" v/required-string
+                        "password" v/required-string}
+                       (parse-body req))
+           (fn [{user-auth-key "user_auth_key" password "password"}]
+             (boilerplate-out req (biz/delete-user user-auth-key password)))))
 
 (defn update-user-password [req]
-  (let [params (->> req :body slurp (boilerplate-in req))
-        user-auth-key (get params "user_auth_key" nil)
-        old-password (get params "old_password" nil)
-        new-password (get params "new_password" nil)]
-    (boilerplate-out req
-                 (biz/update-user-password user-auth-key
-                                           old-password
-                                           new-password))))
+  (respond req
+           (v/validate {"user_auth_key" v/required-string
+                        "old_password" v/required-string
+                        "new_password" v/required-string}
+                       (parse-body req))
+           (fn [{user-auth-key "user_auth_key"
+                 old-password "old_password"
+                 new-password "new_password"}]
+             (boilerplate-out req
+                              (biz/update-user-password user-auth-key
+                                                        old-password
+                                                        new-password)))))
 
 (defn list-app-users [req]
-  (let [params (-> req :query-string url-search-params)
-        client-auth-key (get params "client_auth_key" nil)
-        app-auth-key (get params "app_auth_key" nil)]
-    (boilerplate-out req (biz/list-app-users client-auth-key app-auth-key))))
+  (respond req
+           (v/validate-query req {"client_auth_key" v/required-string
+                                  "app_auth_key" v/required-string} url-search-params)
+           (fn [{client-auth-key "client_auth_key" app-auth-key "app_auth_key"}]
+             (boilerplate-out req (biz/list-app-users client-auth-key app-auth-key)))))
 
 (defn upload-user-file [req]
-  (let [user-auth-key (-> req :headers (get "x-user-auth-key"))
-        filename (-> req :headers (get "x-filename"))
-        contents (-> req :body slurp)]
-    (boilerplate-out req (biz/upload-user-file user-auth-key filename contents))))
+  (let [contents (-> req :body slurp)]
+    (respond req
+             (v/validate-headers req {"x-user-auth-key" v/required-string
+                                      "x-filename" v/required-string})
+             (fn [{auth-key "x-user-auth-key" filename "x-filename"}]
+               (boilerplate-out req (biz/upload-user-file auth-key filename contents))))))
 
 (defn download-user-file [req]
-  (let [user-auth-key (-> req :headers (get "x-user-auth-key"))
-        filename (-> req :headers (get "x-filename"))]
-    (biz/download-user-file user-auth-key filename)))
+  (respond req
+           (v/validate-headers req {"x-user-auth-key" v/required-string
+                                    "x-filename" v/required-string})
+           (fn [{auth-key "x-user-auth-key" filename "x-filename"}]
+             (biz/download-user-file auth-key filename))))
 
 (defn list-user-files [req]
-  (let [auth-key (-> req :headers (get "x-user-auth-key"))]
-    (boilerplate-out req (biz/list-user-files auth-key))))
+  (respond req
+           (v/validate-headers req {"x-user-auth-key" v/required-string})
+           (fn [{auth-key "x-user-auth-key"}]
+             (boilerplate-out req (biz/list-user-files auth-key)))))
 
 (defn delete-user-file [req]
-  (let [user-auth-key (-> req :headers (get "x-user-auth-key"))
-        filename (-> req :headers (get "x-filename"))]
-    (boilerplate-out req (biz/delete-user-file user-auth-key filename))))
+  (respond req
+           (v/validate-headers req {"x-user-auth-key" v/required-string
+                                    "x-filename" v/required-string})
+           (fn [{auth-key "x-user-auth-key" filename "x-filename"}]
+             (boilerplate-out req (biz/delete-user-file auth-key filename)))))
 
 (defn upload-app-file [req]
-  (let [client-auth-key (-> req :headers (get "x-client-auth-key"))
-        app-auth-key (-> req :headers (get "x-app-auth-key"))
-        filename (-> req :headers (get "x-filename"))
-        contents (-> req :body slurp)]
-    (->> (biz/upload-app-file client-auth-key app-auth-key filename contents)
-         (boilerplate-out req))))
+  (let [contents (-> req :body slurp)]
+    (respond req
+             (v/validate-headers req {"x-client-auth-key" v/required-string
+                                      "x-app-auth-key" v/required-string
+                                      "x-filename" v/required-string})
+             (fn [{client-auth-key "x-client-auth-key"
+                   app-auth-key "x-app-auth-key"
+                   filename "x-filename"}]
+               (boilerplate-out req (biz/upload-app-file client-auth-key app-auth-key filename contents))))))
 
 (defn download-app-file [req]
-  (let [client-auth-key (-> req :headers (get "x-client-auth-key"))
-        app-auth-key (-> req :headers (get "x-app-auth-key"))
-        filename (-> req :headers (get "x-filename"))]
-    (biz/download-app-file client-auth-key app-auth-key filename)))
+  (respond req
+           (v/validate-headers req {"x-client-auth-key" v/required-string
+                                    "x-app-auth-key" v/required-string
+                                    "x-filename" v/required-string})
+           (fn [{client-auth-key "x-client-auth-key"
+                 app-auth-key "x-app-auth-key"
+                 filename "x-filename"}]
+             (biz/download-app-file client-auth-key app-auth-key filename))))
 
 (defn delete-app-file [req]
-  (let [client-auth-key (-> req :headers (get "x-client-auth-key"))
-        app-auth-key (-> req :headers (get "x-app-auth-key"))
-        filename (-> req :headers (get "x-filename"))]
-    (boilerplate-out req
-                 (biz/delete-app-file client-auth-key
-                                      app-auth-key
-                                      filename))))
+  (respond req
+           (v/validate-headers req {"x-client-auth-key" v/required-string
+                                    "x-app-auth-key" v/required-string
+                                    "x-filename" v/required-string})
+           (fn [{client-auth-key "x-client-auth-key"
+                 app-auth-key "x-app-auth-key"
+                 filename "x-filename"}]
+             (boilerplate-out req (biz/delete-app-file client-auth-key app-auth-key filename)))))
 
 (defn list-app-files [req]
-  (let [params (-> req :query-string url-search-params)
-        client-auth-key (get params "client_auth_key")
-        app-auth-key (get params "app_auth_key")]
-    (boilerplate-out req (biz/list-app-files client-auth-key app-auth-key))))
+  (respond req
+           (v/validate-query req {"client_auth_key" v/required-string
+                                  "app_auth_key" v/required-string} url-search-params)
+           (fn [{client-auth-key "client_auth_key" app-auth-key "app_auth_key"}]
+             (boilerplate-out req (biz/list-app-files client-auth-key app-auth-key)))))
 
 (defn list-app-managers [req]
-  (let [params (-> req :query-string url-search-params)
-        client-auth-key (get params "client_auth_key" nil)
-        app-auth-key (get params "app_auth_key" nil)]
-    (boilerplate-out req
-                 (biz/list-app-managers client-auth-key app-auth-key))))
+  (respond req
+           (v/validate-query req {"client_auth_key" v/required-string
+                                  "app_auth_key" v/required-string} url-search-params)
+           (fn [{client-auth-key "client_auth_key" app-auth-key "app_auth_key"}]
+             (boilerplate-out req
+                              (biz/list-app-managers client-auth-key app-auth-key)))))
 
 (defn revoke-app-manager [req]
-  (let [params (->> req :body slurp (boilerplate-in req))
-        client-auth-key (get params "client_auth_key" nil)
-        app-auth-key (get params "app_auth_key" nil)
-        email-to-revoke (get params "email_to_revoke" nil)]
-    (boilerplate-out req
-                 (biz/revoke-admin-access client-auth-key
-                                          app-auth-key
-                                          email-to-revoke))))
+  (respond req
+           (v/validate {"client_auth_key" v/required-string
+                        "app_auth_key" v/required-string
+                        "email_to_revoke" v/required-email}
+                       (parse-body req))
+           (fn [{client-auth-key "client_auth_key"
+                 app-auth-key "app_auth_key"
+                 email-to-revoke "email_to_revoke"}]
+             (boilerplate-out req
+                              (biz/revoke-admin-access client-auth-key
+                                                       app-auth-key
+                                                       email-to-revoke)))))
 
 (defn upload-action [req]
-  (let [params (->> req :body slurp (boilerplate-in req))
-        client-auth-key (get params "client_auth_key" nil)
-        app-auth-key (get params "app_auth_key" nil)
-        action-name (get params "action_name" nil)
-        action-script (get params "action_script" nil)]
-    (boilerplate-out req (biz/upsert-action client-auth-key
-                                    app-auth-key
-                                    action-name
-                                    action-script))))
+  (respond req
+           (v/validate {"client_auth_key" v/required-string
+                        "app_auth_key" v/required-string
+                        "action_name" v/required-string
+                        "action_script" v/required-string}
+                       (parse-body req))
+           (fn [{client-auth-key "client_auth_key"
+                 app-auth-key "app_auth_key"
+                 action-name "action_name"
+                 action-script "action_script"}]
+             (boilerplate-out req (biz/upsert-action client-auth-key
+                                                     app-auth-key
+                                                     action-name
+                                                     action-script)))))
 
 (defn update-action [req]
-  (let [params (->> req :body slurp (boilerplate-in req))
-        client-auth-key (get params "client_auth_key" nil)
-        app-auth-key (get params "app_auth_key" nil)
-        old-action-name (get params "old_action_name" nil)
-        new-action-name (get params "new_action_name" nil)
-        action-script (get params "action_script" nil)]
-    (boilerplate-out req
-                 (biz/update-action client-auth-key
-                                    app-auth-key
-                                    old-action-name
-                                    new-action-name
-                                    action-script))))
+  (respond req
+           (v/validate {"client_auth_key" v/required-string
+                        "app_auth_key" v/required-string
+                        "old_action_name" v/required-string
+                        "new_action_name" v/required-string
+                        "action_script" v/required-string}
+                       (parse-body req))
+           (fn [{client-auth-key "client_auth_key"
+                 app-auth-key "app_auth_key"
+                 old-action-name "old_action_name"
+                 new-action-name "new_action_name"
+                 action-script "action_script"}]
+             (boilerplate-out req
+                              (biz/update-action client-auth-key
+                                                 app-auth-key
+                                                 old-action-name
+                                                 new-action-name
+                                                 action-script)))))
 
 (defn upload-actions [req]
-  (let [client-auth-key (-> req :headers (get "x-client-auth-key"))
-        app-auth-key (-> req :headers (get "x-app-auth-key"))
-        compressed-actions (-> req :body untar/slurp-bytes)]
-    (boilerplate-out req
-                 (biz/upload-actions client-auth-key
-                                     app-auth-key
-                                     compressed-actions))))
+  (let [compressed-actions (-> req :body untar/slurp-bytes)]
+    (respond req
+             (v/validate-headers req {"x-client-auth-key" v/required-string
+                                      "x-app-auth-key" v/required-string})
+             (fn [{client-auth-key "x-client-auth-key" app-auth-key "x-app-auth-key"}]
+               (boilerplate-out req
+                                (biz/upload-actions client-auth-key
+                                                    app-auth-key
+                                                    compressed-actions))))))
 
 (defn download-action [req]
-  (let [params (-> req :query-string url-search-params)
-        client-auth-key (get params "client_auth_key" nil)
-        app-auth-key (get params "app_auth_key" nil)
-        action-name (get params "action_name" nil)]
-    (biz/read-action client-auth-key app-auth-key action-name)))
+  (respond req
+           (v/validate-query req {"client_auth_key" v/required-string
+                                  "app_auth_key" v/required-string
+                                  "action_name" v/required-string} url-search-params)
+           (fn [{client-auth-key "client_auth_key"
+                 app-auth-key "app_auth_key"
+                 action-name "action_name"}]
+             (biz/read-action client-auth-key app-auth-key action-name))))
 
 (defn list-actions [req]
-  (let [params (-> req :query-string url-search-params)
-        client-auth-key (get params "client_auth_key" nil)
-        app-auth-key (get params "app_auth_key" nil)]
-    (boilerplate-out req (biz/list-actions client-auth-key app-auth-key))))
+  (respond req
+           (v/validate-query req {"client_auth_key" v/required-string
+                                  "app_auth_key" v/required-string} url-search-params)
+           (fn [{client-auth-key "client_auth_key" app-auth-key "app_auth_key"}]
+             (boilerplate-out req (biz/list-actions client-auth-key app-auth-key)))))
 
 (defn delete-action [req]
-  (let [params (->> req :body slurp (boilerplate-in req))
-        client-auth-key (get params "client_auth_key" nil)
-        app-auth-key (get params "app_auth_key" nil)
-        action-name (get params "action_name" nil)]
-    (boilerplate-out req
-                 (biz/delete-action client-auth-key
-                                    app-auth-key
-                                    action-name))))
+  (respond req
+           (v/validate {"client_auth_key" v/required-string
+                        "app_auth_key" v/required-string
+                        "action_name" v/required-string}
+                       (parse-body req))
+           (fn [{client-auth-key "client_auth_key"
+                 app-auth-key "app_auth_key"
+                 action-name "action_name"}]
+             (boilerplate-out req
+                              (biz/delete-action client-auth-key
+                                                 app-auth-key
+                                                 action-name)))))
 
 (defn run-action [req]
-  (let [params (->> req :body slurp (boilerplate-in req))
-        user-auth-key (get params "user_auth_key" nil)
-        app-auth-key (get params "app_auth_key" nil)
-        action-name (get params "action_name" nil)
-        action-param (get params "action_param" nil)]
-    (boilerplate-out req
-                 (proxies/run-action user-auth-key
-                                     app-auth-key
-                                     action-name
-                                     action-param))))
+  (respond req
+           (v/validate {"user_auth_key" v/required-string
+                        "app_auth_key" v/required-string
+                        "action_name" v/required-string
+                        "action_param" v/required-string}
+                       (parse-body req))
+           (fn [{user-auth-key "user_auth_key"
+                 app-auth-key "app_auth_key"
+                 action-name "action_name"
+                 action-param "action_param"}]
+             (boilerplate-out req
+                              (proxies/run-action user-auth-key
+                                                  app-auth-key
+                                                  action-name
+                                                  action-param)))))
 
 (defn- list-all-things [req f]
-  (boilerplate-out req (-> req
-                            :headers
-                            (get "x-client-auth-key")
-                            f)))
+  (respond req
+           (v/validate-headers req {"x-client-auth-key" v/required-string})
+           (fn [{auth-key "x-client-auth-key"}]
+             (boilerplate-out req (f auth-key)))))
 
 (defn list-all-clients [req]
   (list-all-things req biz/list-all-clients))
@@ -306,16 +400,20 @@
   (list-all-things req biz/list-all-admins))
 
 (defn promote-to-admin [req]
-  (let [params (->> req :body slurp (boilerplate-in req))
-        auth-key (get params "auth_key" nil)
-        email (get params "email" nil)]
-    (boilerplate-out req (biz/promote-to-admin auth-key email))))
+  (respond req
+           (v/validate {"auth_key" v/required-string
+                        "email" v/required-email}
+                       (parse-body req))
+           (fn [{auth-key "auth_key" email "email"}]
+             (boilerplate-out req (biz/promote-to-admin auth-key email)))))
 
 (defn demote-admin [req]
-  (let [params (->> req :body slurp (boilerplate-in req))
-        auth-key (get params "auth_key" nil)
-        email (get params "email" nil)]
-    (boilerplate-out req (biz/demote-admin auth-key email))))
+  (respond req
+           (v/validate {"auth_key" v/required-string
+                        "email" v/required-string}
+                       (parse-body req))
+           (fn [{auth-key "auth_key" email "email"}]
+             (boilerplate-out req (biz/demote-admin auth-key email)))))
 
 (defn check-admin [req]
   (list-all-things req biz/check-admin))
@@ -392,4 +490,3 @@
       (apply jobs/to-recfile (rest args)))
     (when (some #(= "from-recfile" %) args)
       (apply jobs/from-recfile (rest args)))))
-

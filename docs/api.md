@@ -2,7 +2,7 @@
 
 This document outlines the available endpoints for the BaaS (Backend as a Service) API, detailing the HTTP method, path, and expected payload parameters for each function. All payloads are expected to be processed via `application/json` or `application/vnd.msgpack`.
 
-## ⚡ Health Check
+## Health Check
 
 - **Endpoint:** `/health`
 - **Method:** `GET`
