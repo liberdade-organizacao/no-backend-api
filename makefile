@@ -70,3 +70,7 @@ repl:
 outdated:
 	lein ancient check
 
+.PHONY: unused
+unused:
+	lein unused-deps
+

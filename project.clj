@@ -6,7 +6,6 @@
   :dependencies [[org.clojure/clojure "1.12.5"]
                  [compojure "1.7.2"]
                  [http-kit "2.8.1"]
-                 [ring/ring-defaults "0.7.1"]
                  [org.clojure/data.json "2.5.2"]
                  [selmer "1.13.4"]
                  [buddy/buddy-sign "3.6.1-359"]
@@ -23,5 +22,6 @@
   :profiles {:uberjar {:aot :all
                        :uberjar-name "br.bsb.liberdade.baas.api.jar"
                        :jvm-opts ["-Dclojure.compiler.direct-linking=true"]}}
-  :plugins [[lein-ancient "1.0.0-RC3"]])
+  :plugins [[lein-ancient "1.0.0-RC3"]
+            [us.technomancy/lein-unused-deps "0.2.0"]])
 
