@@ -63,16 +63,23 @@
 ; # RECFILE TO TABLE #
 ; ####################
 
+(defn- extract-record-type [rec-lines]
+  (first (filter #(re-find #"^%rec:" %) rec-lines)))
+
 (defn- rec-to-edn [inlet]
   (->> (string/split inlet #"\n\n")
        (map #(string/split % #"\n"))
-       (map (fn [fields]
-              (reduce (fn [state field]
-                        (let [matches (re-find #"(.*)\: (.*)" field)]
-                          (assoc state (nth matches 1) (nth matches 2))))
-                      {}
-                      fields)))
-       rest))
+       (map (fn [rec-lines]
+              (let [record-type (extract-record-type rec-lines)
+                    fields (-> rec-lines
+                               (filter #(not (re-find #"^%" %)))
+                               (remove #(re-find #"^#" %)))]
+                (reduce (fn [state field]
+                          (let [matches (re-find #"(.*)\: (.*)" field)]
+                            (assoc state (nth matches 1) (nth matches 2))))
+                        (or record-type "default")
+                        fields))))
+       (remove #(empty? %))))
 
 (defn- destringify [k v]
   (cond
@@ -117,9 +124,13 @@
           []
           recs))
 
-(defn from-recfile [table-name input-file]
+(defn from-recfile [input-file]
   (->> input-file
-       slurp
-       rec-to-edn
-       (upsert-recs table-name)))
+        slurp
+        rec-to-edn
+        (map (fn [entry]
+               (let [table-name (or (:rec entry) "default")
+                     clean-rec (dissoc entry :rec)]
+                 (upsert-rec table-name clean-rec))))
+        doall))
 

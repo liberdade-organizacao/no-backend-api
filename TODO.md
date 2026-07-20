@@ -8,8 +8,8 @@
 - [x] Implement logic to iterate through the requested `table-names` (or all detected tables if none were provided) and append them sequentially into the single `output-file`.
 
 ### 2. Refactor `from-recfile` in `jobs.clj`
-- [ ] Update signature from `[table-name input-file]` to `[input-file]`.
-- [ ] Implement logic to read the file, parse all table entries (handling multiple tables within one file), and perform upserts for each.
+- [x] Update signature from `[table-name input-file]` to `[input-file]`.
+- [x] Implement logic to read the file, parse all table entries (handling multiple tables within one file), and perform upserts for each.
 
 ### 3. Update `makefile`
 - [ ] Define `export_database` command: `lein run to-recfile <output_path>` (exports everything by default).
