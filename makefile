@@ -48,11 +48,11 @@ migrate_down:
 
 .PHONY: export_database
 export_database:
-	echo "FIXME"
+	lein run to-recfile backup.rec
 
 .PHONY: import_database
 import_database:
-	echo "FIXME"
+	lein run from-recfile backup.rec
 
 .PHONY: file_size_job
 file_size_job:

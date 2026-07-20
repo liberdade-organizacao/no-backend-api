@@ -12,8 +12,8 @@
 - [x] Implement logic to read the file, parse all table entries (handling multiple tables within one file), and perform upserts for each.
 
 ### 3. Update `makefile`
-- [ ] Define `export_database` command: `lein run to-recfile <output_path>` (exports everything by default).
-- [ ] Define `import_database` command: `lein run from-recfile <input_path>`.
+- [x] Define `export_database` command: `lein run to-recfile <output_path>` (exports everything by default).
+- [x] Define `import_database` command: `lein run from-recfile <input_path>`.
 
 ### 4. Verification
 - [ ] Verify that the new command line argument structure in `api.clj` works as intended with the refactored jobs.
