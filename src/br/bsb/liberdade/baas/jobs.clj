@@ -38,11 +38,26 @@
           (build-rec-header table-name entries)
           entries))
 
-(defn to-recfile [table-name output-file]
-  (->> (str "SELECT * FROM " table-name ";")
+(defn get-table-names []
+  (->> "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'"
        db/execute-query
-       (edn-to-rec table-name)
-       (spit output-file)))
+       (map :name)
+       (filter (complement string/blank?))))
+
+(defn to-recfile [output-file & table-names]
+  (let [tables (if (empty? table-names)
+                 (get-table-names)
+                 table-names)
+        tables (distinct tables)
+        entries (mapv (fn [table]
+                        (->> (str "SELECT * FROM " table ";")
+                             db/execute-query
+                             (edn-to-rec table)))
+                      tables)]
+    (spit output-file "")
+    (doseq [entry entries]
+      (spit output-file entry :append true))
+    output-file))
 
 ; ####################
 ; # RECFILE TO TABLE #
