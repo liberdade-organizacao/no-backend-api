@@ -38,11 +38,18 @@
           (build-rec-header table-name entries)
           entries))
 
-(defn to-recfile [table-name output-file]
+(defn- table-to-edn [table-name]
   (->> (str "SELECT * FROM " table-name ";")
        db/execute-query
-       (edn-to-rec table-name)
-       (spit output-file)))
+       (edn-to-rec table-name)))
+
+(defn to-recfile [output-file & [tables]]
+  (let [table-names (if (nil? tables)
+                      (db/get-all-tables)
+                      tables)]
+    (->> (map table-to-edn table-names)
+         (reduce str "")
+         (spit output-file))))
 
 ; ####################
 ; # RECFILE TO TABLE #
