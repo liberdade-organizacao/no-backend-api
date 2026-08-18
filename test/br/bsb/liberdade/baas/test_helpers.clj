@@ -41,7 +41,7 @@
   (let [temp-port-socket (ServerSocket. 0)
         port (.getLocalPort temp-port-socket)]
     (.close temp-port-socket)
-    ;; `run-server` is non-blocking -- it starts its own worker threads and
+    ;; `run-server` is non-blocking: it starts its own worker threads and
     ;; returns a stop function right away, so no wrapper thread is needed.
     (reset! server-stop-fn
             (server/run-server (wrap-cors #'api/app-routes #".*" {:security nil})
@@ -62,7 +62,7 @@
   (reset! current-database-path nil))
 
 ;; `integration-fixture` is registered with `use-fixtures`, which invokes it
-;; as `(fixture-fn test-thunk)` and calls `test-thunk` with zero arguments --
+;; as `(fixture-fn test-thunk)` and calls `test-thunk` with zero arguments:
 ;; deftest bodies can't accept a base-url parameter. The server's base-url is
 ;; instead published through the `*base-url*` dynamic var for the duration of
 ;; the test.
@@ -381,3 +381,15 @@
 
 (defn db-set-client-admin [email is-admin-flag]
   (db-exec ["UPDATE clients SET is_admin=? WHERE email=?" (if is-admin-flag "on" "off") email]))
+
+(defn database-fixture [f]
+  (do
+    (db/setup-database)
+    (db/run-migrations)
+    (try
+      (f)
+      (catch Exception e
+        (throw e))
+      (finally
+        (db/drop-database)))))
+

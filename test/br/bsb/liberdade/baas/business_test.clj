@@ -1,21 +1,11 @@
 (ns br.bsb.liberdade.baas.business-test
   (:require [clojure.test :refer :all]
+            [br.bsb.liberdade.baas.test-helpers :as th]
             [br.bsb.liberdade.baas.utils :as utils]
             [br.bsb.liberdade.baas.db :as db]
             [br.bsb.liberdade.baas.business :as biz]))
 
-(defn- database-fixture [f]
-  (do
-    (db/setup-database)
-    (db/run-migrations)
-    (try
-      (f)
-      (catch Exception e
-        (throw e))
-      (finally
-        (db/drop-database)))))
-
-(use-fixtures :each database-fixture)
+(use-fixtures :each th/database-fixture)
 
 (deftest handle-clients-accounts--happy-cases
   (testing "Can create an account and login"
