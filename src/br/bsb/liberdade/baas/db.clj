@@ -122,6 +122,10 @@
         result (execute-query query)]
     result))
 
+(defn get-all-tables []
+  (map #(get % :name)
+       (run-operation "get-all-tables.sql" {})))
+
 (defn setup-database []
   (run-operation "setup-database.sql" {}))
 

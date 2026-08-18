@@ -484,9 +484,10 @@
       (migrate-up))
     (when (some #(= "migrate-down" %) args)
       (migrate-down))
-    (when (some #(= "up" %) args)
-      (run))
     (when (some #(= "to-recfile" %) args)
       (apply jobs/to-recfile (rest args)))
     (when (some #(= "from-recfile" %) args)
-      (apply jobs/from-recfile (rest args)))))
+      (apply jobs/from-recfile (rest args)))
+    (when (some #(= "up" %) args)
+      (run))))
+
