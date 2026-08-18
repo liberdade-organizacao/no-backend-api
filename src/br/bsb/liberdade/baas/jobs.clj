@@ -104,14 +104,46 @@
     (db/execute-query query)))
 
 (defn- upsert-recs [table-name recs]
-  (reduce (fn [state rec]
-            (conj state (upsert-rec table-name rec)))
-          []
-          recs))
+  (doseq [rec recs]
+    (upsert-rec table-name rec)))
 
-(defn from-recfile [table-name input-file]
-  (->> input-file
-       slurp
-       rec-to-edn
-       (upsert-recs table-name)))
+(defn- is-header? [line]
+  (re-find #"%rec:" line))
+
+(defn- get-table-name [recs]
+  (-> (string/split-lines recs)
+      first
+      (string/split #": ")
+      second))
+
+(defn- lines-to-recs-by-table-name [lines]
+  (loop [head (first lines)
+         tail (rest lines)
+         rec nil
+         outlet {}]
+    (if (nil? head)
+      (assoc outlet
+             (get-table-name rec)
+             rec)
+      (let [header? (is-header? head)
+            first-line? (nil? rec)]
+        (recur (first tail)
+               (rest tail)
+               (cond
+                 first-line? head
+                 header? head
+                 :else (str rec "\n" head))
+               (if (and header? (not first-line?))
+                 (assoc outlet
+                        (get-table-name rec)
+                        rec)
+                 outlet))))))
+
+(defn from-recfile [input-file]
+  (let [recs-by-table-name (-> (slurp input-file)
+                               string/split-lines
+                               lines-to-recs-by-table-name)]
+    (doseq [[table-name raw-recs] recs-by-table-name]
+      (upsert-recs table-name
+                   (rec-to-edn raw-recs)))))
 
