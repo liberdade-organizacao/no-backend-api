@@ -17,23 +17,23 @@ Context:
 ## Action items
 
 ### 1. Gate — `#_`-commented `deftest`, off by default
-- [ ] Create `test/br/bsb/liberdade/baas/scripting_engine_test.clj`.
-- [ ] Prefix the suite's entry `deftest` with `#_` so it registers only when uncommented:
-  ```clojure
-  #_(deftest run-action-endpoint
-        (use-fixtures :each th/scripting-engine-fixture)
-        (testing "…")
-         <body>)
-  ```
-- [ ] Confirm default `lein test` loads the namespace but never registers the commented `deftest`.
+- [x] Create `test/br/bsb/liberdade/baas/scripting_engine_test.clj`.
+- [x] Prefix the suite's entry `deftest` with `#_` so it registers only when uncommented:
+   ```clojure
+   #_(deftest run-action-endpoint
+         (use-fixtures :each th/integration-fixture)
+         (testing "…")
+          <body>)
+   ```
+- [x] Confirm default `lein test` loads the namespace but never registers the commented `deftest`.
 
 ### 2. Helpers in `test/br/bsb/liberdade/baas/test_helpers.clj`
-- [ ] Add `run-action` wrapper, mirroring existing wrappers (lines 154–306), POSTing to
-  `/actions/run` with `user_auth_key`/`app_auth_key`/`action_name`/`action_param`.
-- [ ] Add `scripting-engine-reachable?` — short-timeout `http/get
-  (str proxies/scripting-engine-url "/health")`, catch → `false`.
-- [ ] Add `scripting-engine-fixture [test-fn]` extending `integration-fixture`
-  (lines 69–82): setup sqlite + start BAAS server, then call `scripting-engine-reachable?`;
+- [x] Add `run-action` wrapper, mirroring existing wrappers (lines 154–306), POSTing to
+   `/actions/run` with `user_auth_key`/`app_auth_key`/`action_name`/`action_param`.
+- [x] Add `scripting-engine-reachable?` — short-timeout `http/get
+   (str proxies/scripting-engine-url "/health")`, catch → `false`.
+- [x] Add `scripting-engine-fixture [test-fn]` extending `integration-fixture`
+   (lines 69–82): setup sqlite + start BAAS server, then call `scripting-engine-reachable?`;
   if the engine is down, throw a clear `ex-info` instead of hanging on the `"KO"` fallback.
 
 ### 3. Test cases in the new file (reuse `th/*base-url*` in-process server)
