@@ -17,13 +17,14 @@
 #_(deftest run-action-endpoint
     (use-fixtures :each th/scripting-engine-fixture)
     (testing "run-action forwards to the scripting engine"
-      (let [base-url th/*base-url*
+      (let [base-url (or th/*base-url* "http://localhost:7780")
+            echo-script (slurp "resources/echo-action.lua")
             client-auth-key (:auth_key (th/signup-client base-url (th/random-email) "password"))
             app-auth-key (:auth_key (th/create-app base-url client-auth-key "test-app"))
             user-auth-key (:auth_key (th/signup-user base-url app-auth-key (th/random-email) "userpass"))
-            _ (th/create-action base-url client-auth-key app-auth-key "echo-action" "echo hello")
-            response (th/run-action base-url user-auth-key app-auth-key "echo-action" "world")]
-        (is (some? (:result response)))
+            _ (th/create-action base-url client-auth-key app-auth-key "echo-action.lua" echo-script)
+            response (th/run-action base-url user-auth-key app-auth-key "echo-action.lua" "world")]
+        (is (= "world" (:result response)))
         (is (nil? (:error response))))))
 
 #_(deftest health-reports-engine-status
