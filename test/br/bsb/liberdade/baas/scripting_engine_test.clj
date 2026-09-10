@@ -19,18 +19,19 @@
     (testing "run-action forwards to the scripting engine"
       (let [base-url (or th/*base-url* "http://localhost:7780")
             echo-script (slurp "resources/echo-action.lua")
+            action-name "echo-action.lua"
             client-auth-key (:auth_key (th/signup-client base-url (th/random-email) "password"))
             app-auth-key (:auth_key (th/create-app base-url client-auth-key "test-app"))
             user-auth-key (:auth_key (th/signup-user base-url app-auth-key (th/random-email) "userpass"))
-            _ (th/create-action base-url client-auth-key app-auth-key "echo-action.lua" echo-script)
-            response (th/run-action base-url user-auth-key app-auth-key "echo-action.lua" "world")]
+            _ (th/create-action base-url client-auth-key app-auth-key action-name echo-script)
+            response (th/run-action base-url user-auth-key app-auth-key action-name "world")]
         (is (= "world" (:result response)))
         (is (nil? (:error response))))))
 
 #_(deftest health-reports-engine-status
     (use-fixtures :each th/scripting-engine-fixture)
     (testing "GET /health surfaces the scripting engine's live /health body"
-      (let [base-url th/*base-url*
+      (let [base-url (or th/*base-url* "http://localhost:7780")
             engine-health (-> (str proxies/scripting-engine-url "/health")
                               (http/get {:timeout 2000})
                               :body)
@@ -42,10 +43,12 @@
 #_(deftest run-action-nonexistent-name
     (use-fixtures :each th/scripting-engine-fixture)
     (testing "running a nonexistent action_name surfaces an error"
-      (let [base-url th/*base-url*
+      (let [base-url (or th/*base-url* "http://localhost:7780")
             client-auth-key (:auth_key (th/signup-client base-url (th/random-email) "password"))
             app-auth-key (:auth_key (th/create-app base-url client-auth-key "test-app"))
             user-auth-key (:auth_key (th/signup-user base-url app-auth-key (th/random-email) "userpass"))
             response (th/run-action base-url user-auth-key app-auth-key "no-such-action" "param")]
+        (println "---")
+        (println response)
         (is (some? (:error response)))
         (is (nil? (:result response))))))
