@@ -1,0 +1,52 @@
+%rec: clients
+%key: id
+
+id: 1
+email: test_05dc0e@example.net
+password: 4f119e9466b61c64e572711f728cc0b9
+is_admin: off
+created_at: 2026-09-01 09:58:13
+last_updated_at: 2026-09-01 09:58:13
+
+id: 2
+email: test_25a285@example.net
+password: 4f119e9466b61c64e572711f728cc0b9
+is_admin: off
+created_at: 2026-09-01 09:58:13
+last_updated_at: 2026-09-01 09:58:13
+
+%rec: apps
+%key: id
+
+id: 1
+owner_id: 1
+name: test-app
+created_at: 2026-09-01 09:58:13
+last_updated_at: 2026-09-01 09:58:13
+
+%rec: users
+%key: id
+
+%rec: files
+%key: id
+
+%rec: actions
+%key: id
+
+%rec: app_memberships
+%key: id
+
+id: 1
+app_id: 1
+client_id: 1
+role: admin
+created_at: 2026-09-01 09:58:13
+last_updated_at: 2026-09-01 09:58:13
+
+id: 2
+app_id: 1
+client_id: 2
+role: contributor
+created_at: 2026-09-01 09:58:13
+last_updated_at: 09:58:13
+

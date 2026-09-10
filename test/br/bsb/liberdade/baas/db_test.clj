@@ -19,3 +19,10 @@
       (database-fixture side-fx)
       (is (= 1 @fx)))))
 
+(deftest can-get-all-table-names
+  (testing "all table names except migrations are included"
+    (database-fixture
+     #(let [expected-result ["clients" "apps" "users" "files" "actions" "app_memberships"]
+            obtained-result (db/get-all-tables)]
+        (is (= expected-result obtained-result))))))
+
