@@ -7,6 +7,7 @@
             [jumblerg.middleware.cors :refer [wrap-cors]]
             [br.bsb.liberdade.baas.api :as api]
             [br.bsb.liberdade.baas.db :as db]
+            [br.bsb.liberdade.baas.proxies :as proxies]
             [br.bsb.liberdade.baas.utils :as utils]
             [next.jdbc.result-set :as rs])
   (:import java.net.ServerSocket))
@@ -393,3 +394,25 @@
       (finally
         (db/drop-database)))))
 
+;; #############################
+;; # SCRIPTING ENGINE HELPERS #
+;; #############################
+
+(defn run-action [base-url user-auth-key app-auth-key action-name action-param]
+  (post-json base-url "/actions/run"
+             {"user_auth_key" user-auth-key
+              "app_auth_key" app-auth-key
+              "action_name" action-name
+              "action_param" action-param}))
+
+(defn scripting-engine-reachable? []
+  (try
+    (= 200 (:status (http/get (str proxies/scripting-engine-url "/health")
+                              {:timeout 2000})))
+    (catch Exception _ false)))
+
+(defn scripting-engine-fixture [test-function]
+  (when-not (scripting-engine-reachable?)
+    (throw (ex-info "scripting engine not reachable at SCRIPTING_ENGINE_URL"
+                    {:scripting-engine-url proxies/scripting-engine-url})))
+  (integration-fixture test-function))
