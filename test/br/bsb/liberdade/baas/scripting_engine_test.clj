@@ -25,6 +25,7 @@
             user-auth-key (:auth_key (th/signup-user base-url app-auth-key (th/random-email) "userpass"))
             _ (th/create-action base-url client-auth-key app-auth-key action-name echo-script)
             response (th/run-action base-url user-auth-key app-auth-key action-name "world")]
+        (clojure.pprint/pprint response)
         (is (= "world" (:result response)))
         (is (nil? (:error response))))))
 
