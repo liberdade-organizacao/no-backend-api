@@ -59,7 +59,7 @@
                    {"api" "ok"
                     "db" (db/check-health)
                     "scripting" (proxies/check-scripting-engine-health)
-                    "version" "0.4.0"}))
+                    "version" "0.4.1"}))
 
 (defn clients-signup [req]
   (respond req
